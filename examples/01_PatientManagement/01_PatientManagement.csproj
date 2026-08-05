@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>01_PatientManagement</AssemblyName>
+  </PropertyGroup>
+</Project>

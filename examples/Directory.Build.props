@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Olira.Examples</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../src/Olira/Olira.csproj" />
+    <Compile Include="$(MSBuildThisFileDirectory)_shared/ExampleEnv.cs" Link="_shared/ExampleEnv.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,19 @@
+bin/
+obj/
+.vs/
+*.user*
+*.suo
+*.userprefs
+*.DotSettings.user
+TestResults/
+coverage/
+*.nupkg
+*.snupkg
+.idea/
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# examples secrets
+examples/.env

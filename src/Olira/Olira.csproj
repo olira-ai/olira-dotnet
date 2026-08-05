@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Olira</RootNamespace>
+    <AssemblyName>Olira</AssemblyName>
+    <Version>0.0.1</Version>
+    <Authors>Olira AI</Authors>
+    <Company>Olira AI</Company>
+    <Description>Olira .NET SDK — event ingestion, patient management, and patient state client for the Olira platform.</Description>
+    <PackageId>Olira</PackageId>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://docs.olira.ai</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/olira-ai/olira-dotnet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>olira;health;sdk;ingestion;events</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Parquet.Net" Version="6.0.3" />
+    <PackageReference Include="System.Text.Json" Version="10.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Olira.Tests" />
+  </ItemGroup>
+
+</Project>
