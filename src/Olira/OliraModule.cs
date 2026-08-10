@@ -424,6 +424,30 @@ public static class OliraModule
     /// <summary>Get one log type by subtype or alias.</summary>
     public static LogType GetLogType(string subtype) => GetClient().GetLogType(subtype);
 
+    /// <summary>Start a batch export job. Requires sdk:state-read.</summary>
+    public static ExportJob CreateExport(
+        DateTimeOffset start,
+        DateTimeOffset end,
+        ExportInclude include,
+        IReadOnlyList<string>? patientIds = null,
+        string? cohortId = null,
+        string? scope = null) =>
+        GetClient().CreateExport(start, end, include, patientIds, cohortId, scope);
+
+    /// <summary>Poll an export job.</summary>
+    public static ExportJob GetExport(string exportId) => GetClient().GetExport(exportId);
+
+    /// <summary>List export jobs.</summary>
+    public static ExportJobListResult ListExports(
+        int limit = 50,
+        int offset = 0,
+        string? status = null) =>
+        GetClient().ListExports(limit, offset, status);
+
+    /// <summary>Get a presigned download URL for a completed export.</summary>
+    public static ExportDownload DownloadExport(string exportId) =>
+        GetClient().DownloadExport(exportId);
+
     /// <summary>Dispose the singleton client (optional; process exit also flushes the worker).</summary>
     public static void Shutdown()
     {

@@ -833,4 +833,89 @@ public sealed partial class OliraClient
         ObjectDisposedException.ThrowIf(_disposed, this);
         return _transport.GetSignalJobAsync(jobId, cancellationToken);
     }
+
+    /// <summary>Async create batch export.</summary>
+    public Task<ExportJob> CreateExportAsync(
+        DateTimeOffset start,
+        DateTimeOffset end,
+        ExportInclude include,
+        IReadOnlyList<string>? patientIds = null,
+        string? cohortId = null,
+        string? scope = null,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(include);
+
+        var selectors = 0;
+        if (patientIds is { Count: > 0 }) selectors++;
+        if (!string.IsNullOrEmpty(cohortId)) selectors++;
+        if (!string.IsNullOrEmpty(scope)) selectors++;
+        if (selectors != 1)
+        {
+            throw new ValidationError(
+                "Provide exactly one of patientIds, cohortId, or scope=\"project\"");
+        }
+
+        if (!string.IsNullOrEmpty(scope) &&
+            !string.Equals(scope, "project", StringComparison.Ordinal))
+        {
+            throw new ValidationError("scope must be \"project\" when provided");
+        }
+
+        var body = new Dictionary<string, object?>
+        {
+            ["start"] = start.ToUniversalTime().ToString("o", System.Globalization.CultureInfo.InvariantCulture),
+            ["end"] = end.ToUniversalTime().ToString("o", System.Globalization.CultureInfo.InvariantCulture),
+            ["include"] = include,
+        };
+        if (patientIds is { Count: > 0 }) body["patient_ids"] = patientIds.ToList();
+        if (!string.IsNullOrEmpty(cohortId)) body["cohort_id"] = cohortId;
+        if (!string.IsNullOrEmpty(scope)) body["scope"] = scope;
+
+        return _transport.CreateExportAsync(body, cancellationToken);
+    }
+
+    /// <summary>Async get export.</summary>
+    public Task<ExportJob> GetExportAsync(string exportId, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (string.IsNullOrWhiteSpace(exportId))
+        {
+            throw new ValidationError("exportId is required");
+        }
+
+        return _transport.GetExportAsync(exportId, cancellationToken);
+    }
+
+    /// <summary>Async list exports.</summary>
+    public Task<ExportJobListResult> ListExportsAsync(
+        int limit = 50,
+        int offset = 0,
+        string? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var parameters = new Dictionary<string, object?>
+        {
+            ["limit"] = limit,
+            ["offset"] = offset,
+        };
+        if (!string.IsNullOrEmpty(status)) parameters["status"] = status;
+        return _transport.ListExportsAsync(parameters, cancellationToken);
+    }
+
+    /// <summary>Async download export (presigned URL).</summary>
+    public Task<ExportDownload> DownloadExportAsync(
+        string exportId,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (string.IsNullOrWhiteSpace(exportId))
+        {
+            throw new ValidationError("exportId is required");
+        }
+
+        return _transport.DownloadExportAsync(exportId, cancellationToken);
+    }
 }
