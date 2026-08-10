@@ -1,6 +1,6 @@
 # Olira .NET SDK
 
-Log ingestion, patient management, cohort management, org schema management, historical backfill, and patient state client for the Olira platform.
+Log ingestion, patient management, cohort management, org schema management, log-type catalog discovery, historical backfill, and patient state client for the Olira platform.
 
 ## Install
 
@@ -12,7 +12,7 @@ dotnet add package Olira
 
 Full API reference: [https://docs.olira.ai/reference/sdk](https://docs.olira.ai/reference/sdk).
 
-This package targets **.NET 8** and mirrors the Python `olira` SDK (API parity with **1.11.1**).
+This package targets **.NET 8** and mirrors the Python `olira` SDK (API parity with **1.12.0**).
 
 **Async note:** .NET `*Async` methods share the sync client's background worker (`onError`, queue-full notification). Python's `AsyncOliraClient` has no `on_error` and silently drops when its queue is full; it also lacks document/signal APIs that are available on `OliraClient.*Async` here.
 
@@ -199,6 +199,32 @@ client.ActivateSchemaVersion(subtype: "widget_ping", version: 1);
 
 // Deprecate a version (or withdraw a still-pending request) — never a hard delete
 client.DeprecateSchema(subtype: "widget_ping");
+```
+
+---
+
+## Log Types
+
+`OliraLogType` is a static reference of log types shipped with this SDK version — accurate as of
+release, but it can lag the platform if new log types ship between SDK releases. For agent-guided
+mapping (matching your own data model to Olira's) or anything that needs the current,
+authoritative catalog — including each type's full payload JSON Schema — call the live catalog
+instead. Requires the `sdk:event-log` scope.
+
+```csharp
+using Olira;
+
+using var client = new OliraClient(apiKey: "olira_prod_...");
+
+// List every log type in the platform catalog
+foreach (var lt in client.ListLogTypes().Data)
+{
+    Console.WriteLine($"{lt.Subtype} {lt.DisplayName}");
+}
+
+// Look up one type by subtype (or a known deprecated alias)
+var moodReport = client.GetLogType(subtype: "mood_report");
+Console.WriteLine(moodReport.PayloadSchema);
 ```
 
 ---
