@@ -135,4 +135,82 @@ public sealed partial class OliraClient
         ObjectDisposedException.ThrowIf(_disposed, this);
         return _transport.ActivateSchemaVersion(subtype, version);
     }
+
+    /// <summary>Get org default confidence scoring. Requires api:org-config scope.</summary>
+    public ConfidenceScoringResult GetConfidenceScoring()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.GetConfidenceScoring();
+    }
+
+    /// <summary>Set or clear org default confidence scoring. Pass null to clear.</summary>
+    public ConfidenceScoringResult SetConfidenceScoring(Dictionary<string, object?>? confidenceScoring)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.SetConfidenceScoring(confidenceScoring);
+    }
+
+    /// <summary>Get view-level confidence scoring override.</summary>
+    public ConfidenceScoringResult GetViewConfidenceScoring(string summaryType)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.GetViewConfidenceScoring(summaryType);
+    }
+
+    /// <summary>Set or clear view-level confidence scoring override.</summary>
+    public ConfidenceScoringResult SetViewConfidenceScoring(
+        string summaryType,
+        Dictionary<string, object?>? confidenceScoring)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.SetViewConfidenceScoring(summaryType, confidenceScoring);
+    }
+
+    /// <summary>Get block-level confidence scoring override.</summary>
+    public ConfidenceScoringResult GetBlockConfidenceScoring(string summaryType, string blockId)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.GetBlockConfidenceScoring(summaryType, blockId);
+    }
+
+    /// <summary>Set or clear block-level confidence scoring override.</summary>
+    public ConfidenceScoringResult SetBlockConfidenceScoring(
+        string summaryType,
+        string blockId,
+        Dictionary<string, object?>? confidenceScoring)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.SetBlockConfidenceScoring(summaryType, blockId, confidenceScoring);
+    }
+
+    /// <summary>Get params for one scorer on a view (null if unset).</summary>
+    public Dictionary<string, object?>? GetViewScorerParams(string summaryType, string scorerId)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var current = GetViewConfidenceScoring(summaryType);
+        return ConfidenceScorers.GetScorerParams(current.ConfidenceScoring, scorerId);
+    }
+
+    /// <summary>Set or clear one scorer's params on a view (scorers-primary write).</summary>
+    public ConfidenceScoringResult SetViewScorerParams(
+        string summaryType,
+        string scorerId,
+        Dictionary<string, object?>? params)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var current = GetViewConfidenceScoring(summaryType);
+        var next = ConfidenceScorers.PatchScorer(current.ConfidenceScoring, scorerId, params);
+        return SetViewConfidenceScoring(summaryType, next);
+    }
+
+    /// <summary>Set overall confidence weights on a view (first-order; not a scorer).</summary>
+    public ConfidenceScoringResult SetViewConfidenceWeights(
+        string summaryType,
+        Dictionary<string, object?>? weights)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var current = GetViewConfidenceScoring(summaryType);
+        var next = ConfidenceScorers.SetWeights(current.ConfidenceScoring, weights);
+        return SetViewConfidenceScoring(summaryType, next);
+    }
 }
