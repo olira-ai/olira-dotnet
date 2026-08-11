@@ -36,12 +36,6 @@ public sealed class LogType
 
     /// <summary>Schema version.</summary>
     public int Version { get; set; } = 1;
-
-    /// <summary>Patient-state modules this type's data feeds into.</summary>
-    public List<string> TargetModules { get; set; } = [];
-
-    /// <summary>Whether this type is meant to be surfaced to end users.</summary>
-    public bool UserFacing { get; set; } = true;
 }
 
 /// <summary>Result of ListLogTypes().</summary>
