@@ -1279,4 +1279,79 @@ public sealed partial class HttpTransport
             .ConfigureAwait(false);
         return DeserializeRequired<DocumentResource>(raw);
     }
+
+    // ------------------------------------------------------------------
+    // Batch exports
+    // ------------------------------------------------------------------
+
+    /// <summary>Create a batch export job (POST /v1/exports). Requires sdk:state-read.</summary>
+    public ExportJob CreateExport(object body) =>
+        CreateExportAsync(body).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="CreateExport"/>
+    public async Task<ExportJob> CreateExportAsync(
+        object body,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Post,
+                "/v1/exports",
+                json: body,
+                retryable: false,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ExportJob>(raw);
+    }
+
+    /// <summary>Poll export status (GET /v1/exports/{export_id}).</summary>
+    public ExportJob GetExport(string exportId) =>
+        GetExportAsync(exportId).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="GetExport"/>
+    public async Task<ExportJob> GetExportAsync(
+        string exportId,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Get,
+                $"/v1/exports/{Uri.EscapeDataString(exportId)}",
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ExportJob>(raw);
+    }
+
+    /// <summary>List export jobs (GET /v1/exports).</summary>
+    public ExportJobListResult ListExports(IDictionary<string, object?> parameters) =>
+        ListExportsAsync(parameters).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="ListExports"/>
+    public async Task<ExportJobListResult> ListExportsAsync(
+        IDictionary<string, object?> parameters,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Get,
+                "/v1/exports",
+                parameters: parameters,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ExportJobListResult>(raw);
+    }
+
+    /// <summary>Get a presigned download URL (GET /v1/exports/{export_id}/download).</summary>
+    public ExportDownload DownloadExport(string exportId) =>
+        DownloadExportAsync(exportId).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="DownloadExport"/>
+    public async Task<ExportDownload> DownloadExportAsync(
+        string exportId,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Get,
+                $"/v1/exports/{Uri.EscapeDataString(exportId)}/download",
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ExportDownload>(raw);
+    }
 }

@@ -337,6 +337,49 @@ See the [Backfilling historical data](https://docs.olira.ai/send-data/historical
 
 ---
 
+## Batch export
+
+Compile selected patients into a zip of typed Parquets (logs, state modules, view blocks, events, extracted). Requires the `sdk:state-read` scope. Provide exactly one of `patientIds`, `cohortId`, or `scope: "project"`.
+
+```csharp
+using Olira;
+
+using var client = new OliraClient(apiKey: "olira_prod_...");
+var patientId = "patient_123";
+
+var job = client.CreateExport(
+    start: DateTimeOffset.UtcNow.AddDays(-30),
+    end: DateTimeOffset.UtcNow,
+    include: new ExportInclude
+    {
+        Logs = true,
+        StateModules = true,
+        ViewBlocks = true,
+        Events = true,
+        Extracted = true,
+    },
+    patientIds: [patientId]);
+
+while (job.Status is not (
+    ExportJobStatus.Completed or
+    ExportJobStatus.CompletedWithErrors or
+    ExportJobStatus.Failed or
+    ExportJobStatus.Cancelled))
+{
+    Thread.Sleep(TimeSpan.FromSeconds(3));
+    job = client.GetExport(job.ExportId);
+    Console.WriteLine($"{job.Stage} {job.ProgressPct:0.0}%");
+}
+
+if (job.Downloadable)
+{
+    var dl = client.DownloadExport(job.ExportId);
+    Console.WriteLine(dl.DownloadUrl);
+}
+```
+
+---
+
 ## Patient Token
 
 Mint a short-lived JWT scoped to a single patient. Requires the `sdk:patient-token` scope.
