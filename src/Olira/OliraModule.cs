@@ -448,6 +448,57 @@ public static class OliraModule
     public static ExportDownload DownloadExport(string exportId) =>
         GetClient().DownloadExport(exportId);
 
+    /// <summary>Get org default confidence scoring.</summary>
+    public static ConfidenceScoringResult GetConfidenceScoring() =>
+        GetClient().GetConfidenceScoring();
+
+    /// <summary>Set or clear org default confidence scoring.</summary>
+    public static ConfidenceScoringResult SetConfidenceScoring(
+        Dictionary<string, object?>? confidenceScoring) =>
+        GetClient().SetConfidenceScoring(confidenceScoring);
+
+    /// <summary>Get view-level confidence scoring override.</summary>
+    public static ConfidenceScoringResult GetViewConfidenceScoring(string summaryType) =>
+        GetClient().GetViewConfidenceScoring(summaryType);
+
+    /// <summary>Set or clear view-level confidence scoring.</summary>
+    public static ConfidenceScoringResult SetViewConfidenceScoring(
+        string summaryType,
+        Dictionary<string, object?>? confidenceScoring) =>
+        GetClient().SetViewConfidenceScoring(summaryType, confidenceScoring);
+
+    /// <summary>Get block-level confidence scoring override.</summary>
+    public static ConfidenceScoringResult GetBlockConfidenceScoring(
+        string summaryType,
+        string blockId) =>
+        GetClient().GetBlockConfidenceScoring(summaryType, blockId);
+
+    /// <summary>Set or clear block-level confidence scoring.</summary>
+    public static ConfidenceScoringResult SetBlockConfidenceScoring(
+        string summaryType,
+        string blockId,
+        Dictionary<string, object?>? confidenceScoring) =>
+        GetClient().SetBlockConfidenceScoring(summaryType, blockId, confidenceScoring);
+
+    /// <summary>Get params for one scorer on a view.</summary>
+    public static Dictionary<string, object?>? GetViewScorerParams(
+        string summaryType,
+        string scorerId) =>
+        GetClient().GetViewScorerParams(summaryType, scorerId);
+
+    /// <summary>Set or clear one scorer's params on a view.</summary>
+    public static ConfidenceScoringResult SetViewScorerParams(
+        string summaryType,
+        string scorerId,
+        Dictionary<string, object?>? @params) =>
+        GetClient().SetViewScorerParams(summaryType, scorerId, @params);
+
+    /// <summary>Set overall confidence weights on a view.</summary>
+    public static ConfidenceScoringResult SetViewConfidenceWeights(
+        string summaryType,
+        Dictionary<string, object?>? weights) =>
+        GetClient().SetViewConfidenceWeights(summaryType, weights);
+
     /// <summary>Dispose the singleton client (optional; process exit also flushes the worker).</summary>
     public static void Shutdown()
     {

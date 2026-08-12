@@ -609,6 +609,120 @@ public sealed partial class HttpTransport
     }
 
     // ------------------------------------------------------------------
+    // Confidence scoring config (api:org-config)
+    // ------------------------------------------------------------------
+
+    /// <summary>Get org default confidence scoring (GET /v1/confidence-scoring).</summary>
+    public ConfidenceScoringResult GetConfidenceScoring() =>
+        GetConfidenceScoringAsync().GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="GetConfidenceScoring"/>
+    public async Task<ConfidenceScoringResult> GetConfidenceScoringAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(HttpMethod.Get, "/v1/confidence-scoring", cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ConfidenceScoringResult>(raw);
+    }
+
+    /// <summary>Set or clear org default confidence scoring (PUT /v1/confidence-scoring).</summary>
+    public ConfidenceScoringResult SetConfidenceScoring(Dictionary<string, object?>? confidenceScoring) =>
+        SetConfidenceScoringAsync(confidenceScoring).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="SetConfidenceScoring"/>
+    public async Task<ConfidenceScoringResult> SetConfidenceScoringAsync(
+        Dictionary<string, object?>? confidenceScoring,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Put,
+                "/v1/confidence-scoring",
+                json: new Dictionary<string, object?> { ["confidence_scoring"] = confidenceScoring },
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ConfidenceScoringResult>(raw);
+    }
+
+    /// <summary>Get view-level confidence scoring (GET /v1/views/{summaryType}/confidence-scoring).</summary>
+    public ConfidenceScoringResult GetViewConfidenceScoring(string summaryType) =>
+        GetViewConfidenceScoringAsync(summaryType).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="GetViewConfidenceScoring"/>
+    public async Task<ConfidenceScoringResult> GetViewConfidenceScoringAsync(
+        string summaryType,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Get,
+                $"/v1/views/{Uri.EscapeDataString(summaryType)}/confidence-scoring",
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ConfidenceScoringResult>(raw);
+    }
+
+    /// <summary>Set or clear view-level confidence scoring.</summary>
+    public ConfidenceScoringResult SetViewConfidenceScoring(
+        string summaryType,
+        Dictionary<string, object?>? confidenceScoring) =>
+        SetViewConfidenceScoringAsync(summaryType, confidenceScoring).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="SetViewConfidenceScoring"/>
+    public async Task<ConfidenceScoringResult> SetViewConfidenceScoringAsync(
+        string summaryType,
+        Dictionary<string, object?>? confidenceScoring,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Put,
+                $"/v1/views/{Uri.EscapeDataString(summaryType)}/confidence-scoring",
+                json: new Dictionary<string, object?> { ["confidence_scoring"] = confidenceScoring },
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ConfidenceScoringResult>(raw);
+    }
+
+    /// <summary>Get block-level confidence scoring.</summary>
+    public ConfidenceScoringResult GetBlockConfidenceScoring(string summaryType, string blockId) =>
+        GetBlockConfidenceScoringAsync(summaryType, blockId).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="GetBlockConfidenceScoring"/>
+    public async Task<ConfidenceScoringResult> GetBlockConfidenceScoringAsync(
+        string summaryType,
+        string blockId,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Get,
+                $"/v1/views/{Uri.EscapeDataString(summaryType)}/blocks/{Uri.EscapeDataString(blockId)}/confidence-scoring",
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ConfidenceScoringResult>(raw);
+    }
+
+    /// <summary>Set or clear block-level confidence scoring.</summary>
+    public ConfidenceScoringResult SetBlockConfidenceScoring(
+        string summaryType,
+        string blockId,
+        Dictionary<string, object?>? confidenceScoring) =>
+        SetBlockConfidenceScoringAsync(summaryType, blockId, confidenceScoring).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="SetBlockConfidenceScoring"/>
+    public async Task<ConfidenceScoringResult> SetBlockConfidenceScoringAsync(
+        string summaryType,
+        string blockId,
+        Dictionary<string, object?>? confidenceScoring,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Put,
+                $"/v1/views/{Uri.EscapeDataString(summaryType)}/blocks/{Uri.EscapeDataString(blockId)}/confidence-scoring",
+                json: new Dictionary<string, object?> { ["confidence_scoring"] = confidenceScoring },
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ConfidenceScoringResult>(raw);
+    }
+
+    // ------------------------------------------------------------------
     // Auth / patient token
     // ------------------------------------------------------------------
 
