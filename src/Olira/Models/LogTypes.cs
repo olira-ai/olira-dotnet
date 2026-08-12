@@ -2,7 +2,7 @@ namespace Olira;
 
 /// <summary>
 /// Customer-facing log types. Values match the platform log catalog.
-/// As of OLI-1943, most verb-suffixed subtypes were renamed to noun-only canonical
+/// Most verb-suffixed subtypes were renamed to noun-only canonical
 /// names. Deprecated members remain valid indefinitely; prefer canonical names for
 /// new integrations.
 /// </summary>
@@ -173,7 +173,7 @@ public static class OliraLogType
     /// <summary>Deprecated: use <see cref="TreatmentPhase"/>.</summary>
     public const string TreatmentPhaseChanged = "treatment_phase_changed";
 
-    // Canonical noun-only names (OLI-1943)
+    // Canonical noun-only names
 
     /// <summary>Mood report (canonical).</summary>
     public const string MoodReport = "mood_report";

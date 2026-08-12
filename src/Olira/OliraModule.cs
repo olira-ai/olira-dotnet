@@ -418,6 +418,12 @@ public static class OliraModule
     public static SchemaActionResult ActivateSchemaVersion(string subtype, int version) =>
         GetClient().ActivateSchemaVersion(subtype, version);
 
+    /// <summary>List every log type in the platform catalog, with its full payload JSON Schema.</summary>
+    public static LogTypeListResult ListLogTypes() => GetClient().ListLogTypes();
+
+    /// <summary>Get one log type by subtype or alias.</summary>
+    public static LogType GetLogType(string subtype) => GetClient().GetLogType(subtype);
+
     /// <summary>Dispose the singleton client (optional; process exit also flushes the worker).</summary>
     public static void Shutdown()
     {

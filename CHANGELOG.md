@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] - 2026-08-10
+
+### Added
+- `ListLogTypes()` / `GetLogType()` on `OliraClient` (sync + async) and `OliraModule` — live
+  discovery of the platform's log-type catalog, including each type's full payload JSON Schema.
+  Requires `sdk:event-log` scope. Complements the static `OliraLogType` constants for
+  agent-guided mapping.
+
 ## [0.0.1] - 2026-08-05
 
 ### Added

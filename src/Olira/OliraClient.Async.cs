@@ -496,6 +496,20 @@ public sealed partial class OliraClient
         return _transport.ActivateSchemaVersionAsync(subtype, version, cancellationToken);
     }
 
+    /// <summary>Async list log types.</summary>
+    public Task<LogTypeListResult> ListLogTypesAsync(CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.ListLogTypesAsync(cancellationToken);
+    }
+
+    /// <summary>Async get log type.</summary>
+    public Task<LogType> GetLogTypeAsync(string subtype, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.GetLogTypeAsync(subtype, cancellationToken);
+    }
+
     /// <summary>Async get stable data.</summary>
     public Task<StableDataResult> GetStableDataAsync(
         string patientId,

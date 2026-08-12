@@ -578,6 +578,37 @@ public sealed partial class HttpTransport
     }
 
     // ------------------------------------------------------------------
+    // Log types
+    // ------------------------------------------------------------------
+
+    /// <summary>List the platform's log-type catalog (GET /v1/log-types). Requires sdk:event-log scope.</summary>
+    public LogTypeListResult ListLogTypes() =>
+        ListLogTypesAsync().GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="ListLogTypes"/>
+    public async Task<LogTypeListResult> ListLogTypesAsync(CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(HttpMethod.Get, "/v1/log-types", cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<LogTypeListResult>(raw);
+    }
+
+    /// <summary>Get one log type by subtype or alias (GET /v1/log-types/{subtype}). Requires sdk:event-log scope.</summary>
+    public LogType GetLogType(string subtype) =>
+        GetLogTypeAsync(subtype).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="GetLogType"/>
+    public async Task<LogType> GetLogTypeAsync(string subtype, CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Get,
+                $"/v1/log-types/{Uri.EscapeDataString(subtype)}",
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<LogType>(raw);
+    }
+
+    // ------------------------------------------------------------------
     // Auth / patient token
     // ------------------------------------------------------------------
 

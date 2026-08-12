@@ -4,5 +4,5 @@ namespace Olira;
 public static class VersionInfo
 {
     /// <summary>Current Olira .NET SDK version.</summary>
-    public const string Version = "0.0.1";
+    public const string Version = "0.1.0";
 }
