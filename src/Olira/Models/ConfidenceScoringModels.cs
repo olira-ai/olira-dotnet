@@ -65,7 +65,7 @@ public static class ConfidenceScorers
     public static Dictionary<string, object?> PatchScorer(
         Dictionary<string, object?>? raw,
         string scorerId,
-        Dictionary<string, object?>? params)
+        Dictionary<string, object?>? @params)
     {
         var cfg = Normalize(raw);
         var kept = new List<Dictionary<string, object?>>();
@@ -86,12 +86,12 @@ public static class ConfidenceScorers
             }
         }
 
-        if (params is not null)
+        if (@params is not null)
         {
             kept.Add(new Dictionary<string, object?>
             {
                 ["scorer_id"] = scorerId,
-                ["params"] = params,
+                ["params"] = @params,
             });
         }
 
@@ -145,10 +145,10 @@ public static class ConfidenceScorers
         return null;
     }
 
-    private static List<Dictionary<string, object?>>? LegacyParamsToScorers(Dictionary<string, object?> params)
+    private static List<Dictionary<string, object?>>? LegacyParamsToScorers(Dictionary<string, object?> @params)
     {
         var outList = new List<Dictionary<string, object?>>();
-        if (params.TryGetValue("freshness_zero_days", out var fz) && fz is not null)
+        if (@params.TryGetValue("freshness_zero_days", out var fz) && fz is not null)
         {
             outList.Add(new Dictionary<string, object?>
             {
@@ -157,7 +157,7 @@ public static class ConfidenceScorers
             });
         }
 
-        if (params.TryGetValue("evidence_density_divisor", out var ed) && ed is not null)
+        if (@params.TryGetValue("evidence_density_divisor", out var ed) && ed is not null)
         {
             outList.Add(new Dictionary<string, object?>
             {
@@ -167,12 +167,12 @@ public static class ConfidenceScorers
         }
 
         var cert = new Dictionary<string, object?>();
-        if (params.TryGetValue("certainty_rubric", out var cr) && cr is not null)
+        if (@params.TryGetValue("certainty_rubric", out var cr) && cr is not null)
         {
             cert["certainty_rubric"] = cr;
         }
 
-        if (params.TryGetValue("agentic_trajectory_alpha", out var alpha) && alpha is not null)
+        if (@params.TryGetValue("agentic_trajectory_alpha", out var alpha) && alpha is not null)
         {
             cert["agentic_trajectory_alpha"] = alpha;
         }
@@ -183,7 +183,7 @@ public static class ConfidenceScorers
         }
 
         var cons = new Dictionary<string, object?>();
-        if (params.TryGetValue("consistency_rubric", out var csr) && csr is not null)
+        if (@params.TryGetValue("consistency_rubric", out var csr) && csr is not null)
         {
             cons["consistency_rubric"] = csr;
         }

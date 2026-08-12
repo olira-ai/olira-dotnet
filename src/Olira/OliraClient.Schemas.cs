@@ -195,11 +195,11 @@ public sealed partial class OliraClient
     public ConfidenceScoringResult SetViewScorerParams(
         string summaryType,
         string scorerId,
-        Dictionary<string, object?>? params)
+        Dictionary<string, object?>? @params)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         var current = GetViewConfidenceScoring(summaryType);
-        var next = ConfidenceScorers.PatchScorer(current.ConfidenceScoring, scorerId, params);
+        var next = ConfidenceScorers.PatchScorer(current.ConfidenceScoring, scorerId, @params);
         return SetViewConfidenceScoring(summaryType, next);
     }
 
