@@ -345,6 +345,7 @@ Compile selected patients into a zip of typed Parquets (logs, state modules, vie
 using Olira;
 
 using var client = new OliraClient(apiKey: "olira_prod_...");
+var patientId = "patient_123";
 
 var job = client.CreateExport(
     start: DateTimeOffset.UtcNow.AddDays(-30),

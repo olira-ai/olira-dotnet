@@ -1297,6 +1297,7 @@ public sealed partial class HttpTransport
                 HttpMethod.Post,
                 "/v1/exports",
                 json: body,
+                retryable: false,
                 cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         return DeserializeRequired<ExportJob>(raw);
