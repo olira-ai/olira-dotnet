@@ -227,7 +227,10 @@ foreach (var d in deliveries.Data)
 }
 
 // Resend a delivery: the same body as the original, not a newly generated one
-client.RedeliverActionDelivery(deliveries.Data[0].Id);
+if (deliveries.Data.Count > 0)
+{
+    client.RedeliverActionDelivery(deliveries.Data[0].Id);
+}
 
 // Rotate the signing secret (old one stays valid 24h for dual-signing)
 client.RotateActionDestinationSecret(destination.Id);
