@@ -456,6 +456,171 @@ public sealed partial class HttpTransport
             .ConfigureAwait(false);
 
     // ------------------------------------------------------------------
+    // Actions (requires sdk:actions scope)
+    // ------------------------------------------------------------------
+
+    /// <summary>Create an action destination (POST /v1/actions/destinations). Non-idempotent, not retried.</summary>
+    public ActionDestination CreateActionDestination(object body) =>
+        CreateActionDestinationAsync(body).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="CreateActionDestination"/>
+    public async Task<ActionDestination> CreateActionDestinationAsync(
+        object body,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Post,
+                "/v1/actions/destinations",
+                json: body,
+                retryable: false,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ActionDestination>(raw);
+    }
+
+    /// <summary>List action destinations (GET /v1/actions/destinations).</summary>
+    public ActionDestinationListResult ListActionDestinations() =>
+        ListActionDestinationsAsync().GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="ListActionDestinations"/>
+    public async Task<ActionDestinationListResult> ListActionDestinationsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(HttpMethod.Get, "/v1/actions/destinations", cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ActionDestinationListResult>(raw);
+    }
+
+    /// <summary>Get one action destination (GET /v1/actions/destinations/{id}).</summary>
+    public ActionDestination GetActionDestination(string destinationId) =>
+        GetActionDestinationAsync(destinationId).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="GetActionDestination"/>
+    public async Task<ActionDestination> GetActionDestinationAsync(
+        string destinationId,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Get,
+                $"/v1/actions/destinations/{Uri.EscapeDataString(destinationId)}",
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ActionDestination>(raw);
+    }
+
+    /// <summary>Update an action destination (PATCH /v1/actions/destinations/{id}).</summary>
+    public ActionDestination UpdateActionDestination(string destinationId, object body) =>
+        UpdateActionDestinationAsync(destinationId, body).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="UpdateActionDestination"/>
+    public async Task<ActionDestination> UpdateActionDestinationAsync(
+        string destinationId,
+        object body,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Patch,
+                $"/v1/actions/destinations/{Uri.EscapeDataString(destinationId)}",
+                json: body,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ActionDestination>(raw);
+    }
+
+    /// <summary>Disable an action destination (DELETE /v1/actions/destinations/{id}).</summary>
+    public ActionDestinationDeleteResult DeleteActionDestination(string destinationId) =>
+        DeleteActionDestinationAsync(destinationId).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="DeleteActionDestination"/>
+    public async Task<ActionDestinationDeleteResult> DeleteActionDestinationAsync(
+        string destinationId,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Delete,
+                $"/v1/actions/destinations/{Uri.EscapeDataString(destinationId)}",
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ActionDestinationDeleteResult>(raw);
+    }
+
+    /// <summary>
+    /// Rotate a destination's signing secret (POST .../rotate-secret). Non-idempotent, not retried.
+    /// </summary>
+    public ActionDestination RotateActionDestinationSecret(string destinationId) =>
+        RotateActionDestinationSecretAsync(destinationId).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="RotateActionDestinationSecret"/>
+    public async Task<ActionDestination> RotateActionDestinationSecretAsync(
+        string destinationId,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Post,
+                $"/v1/actions/destinations/{Uri.EscapeDataString(destinationId)}/rotate-secret",
+                retryable: false,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ActionDestination>(raw);
+    }
+
+    /// <summary>List deliveries, cursor-paginated (GET /v1/actions/deliveries).</summary>
+    public ActionDeliveryListResult ListActionDeliveries(IDictionary<string, object?> parameters) =>
+        ListActionDeliveriesAsync(parameters).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="ListActionDeliveries"/>
+    public async Task<ActionDeliveryListResult> ListActionDeliveriesAsync(
+        IDictionary<string, object?> parameters,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Get,
+                "/v1/actions/deliveries",
+                parameters: parameters,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ActionDeliveryListResult>(raw);
+    }
+
+    /// <summary>Get one delivery, including its payload (GET /v1/actions/deliveries/{id}).</summary>
+    public ActionDelivery GetActionDelivery(string deliveryId) =>
+        GetActionDeliveryAsync(deliveryId).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="GetActionDelivery"/>
+    public async Task<ActionDelivery> GetActionDeliveryAsync(
+        string deliveryId,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Get,
+                $"/v1/actions/deliveries/{Uri.EscapeDataString(deliveryId)}",
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ActionDelivery>(raw);
+    }
+
+    /// <summary>
+    /// Redeliver the exact original bytes (POST .../redeliver). 409 if the destination is
+    /// disabled. Non-idempotent, not retried.
+    /// </summary>
+    public ActionDelivery RedeliverActionDelivery(string deliveryId) =>
+        RedeliverActionDeliveryAsync(deliveryId).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="RedeliverActionDelivery"/>
+    public async Task<ActionDelivery> RedeliverActionDeliveryAsync(
+        string deliveryId,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Post,
+                $"/v1/actions/deliveries/{Uri.EscapeDataString(deliveryId)}/redeliver",
+                retryable: false,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ActionDelivery>(raw);
+    }
+
+    // ------------------------------------------------------------------
     // Schemas
     // ------------------------------------------------------------------
 

@@ -12,7 +12,7 @@ dotnet add package Olira
 
 Full API reference: [https://docs.olira.ai/reference/sdk](https://docs.olira.ai/reference/sdk).
 
-This package targets **.NET 8** and mirrors the Python `olira` SDK (API parity with **1.12.0**).
+This package targets **.NET 8** and mirrors the Python `olira` SDK (API parity with **1.15.0**).
 
 **Async note:** .NET `*Async` methods share the sync client's background worker (`onError`, queue-full notification). Python's `AsyncOliraClient` has no `on_error` and silently drops when its queue is full; it also lacks document/signal APIs that are available on `OliraClient.*Async` here.
 
@@ -30,6 +30,7 @@ All SDK methods authenticate with an **Olira API key** (`olira_prod_...`). Creat
 | `sdk:historical-ingest`   | Create and manage historical data ingestion jobs       |
 | `sdk:state-read`          | Read Patient State (modules, views, logs, memories)    |
 | `api:org-config`          | Register, view, check, edit, deprecate, and activate org-native event schemas/mappings |
+| `sdk:actions`             | Manage outbound-actions destinations and read the delivery ledger |
 | `mcp:patient-state`       | Query Patient State via the MCP Patient State server   |
 
 See [API key scopes](https://docs.olira.ai/cli/scopes) for the full list.
@@ -200,6 +201,83 @@ client.ActivateSchemaVersion(subtype: "widget_ping", version: 1);
 // Deprecate a version (or withdraw a still-pending request) — never a hard delete
 client.DeprecateSchema(subtype: "widget_ping");
 ```
+
+---
+
+## Outbound Actions
+
+Get notified when something happens on the platform: a patient's data updated, a log arrived that changed nothing, a mapping error, or an ingestion job finished. Register a **destination** (a signed HTTPS webhook, or an email) and subscribe it to the triggers you care about. Requires the `sdk:actions` scope.
+
+```csharp
+using Olira;
+
+using var client = new OliraClient(apiKey: "olira_prod_...");
+
+// Register a destination (the signing secret is shown once, store it now)
+var destination = client.CreateActionDestination(
+    webhookConfig: new WebhookDestinationConfig { Url = "https://hooks.example.com/olira" },
+    subscribedTriggers: [ActionTrigger.PatientStateChanged, ActionTrigger.IngestionFailed]);
+Console.WriteLine(destination.SigningSecret);
+
+// Inspect the delivery ledger
+var deliveries = client.ListActionDeliveries(destinationId: destination.Id, status: "delivered");
+foreach (var d in deliveries.Data)
+{
+    Console.WriteLine($"{d.Id} {d.Trigger} {d.Status}");
+}
+
+// Resend a delivery: the same body as the original, not a newly generated one
+client.RedeliverActionDelivery(deliveries.Data[0].Id);
+
+// Rotate the signing secret (old one stays valid 24h for dual-signing)
+client.RotateActionDestinationSecret(destination.Id);
+```
+
+`ActionTrigger` lists the currently available triggers as string constants (for autocomplete); a plain string still works everywhere too (nothing validates it client-side, so a typo'd string still reaches the server as a 422). `PatientStateChanged` is frequent enough that `ActionTrigger.RecommendedDigestTriggers` flags it as a candidate for daily batching instead of one delivery per event; pass `DigestSchedule` to `CreateActionDestination`/`UpdateActionDestination` to opt in. A destination subscribed to `ActionTrigger.All` (`"*"`) could start receiving additional trigger types later, since that value is evaluated by the platform rather than by this list.
+
+### Delivery payload
+
+Your webhook endpoint receives a fixed envelope:
+
+```json
+{ "id": "del_123", "type": "patient.state.changed", "created": "2026-08-12T09:14:05Z", "api_version": "2026-08-01", "data": { "...": "..." } }
+```
+
+`type` carries the trigger you subscribed with; it's `Trigger` on `ActionDelivery` (the ledger record this SDK reads back) and `type` in the payload itself.
+
+### Verifying the signature
+
+Every delivery carries an `Olira-Signature` header: `t=<unix_ts>,v1=<hex_hmac>`. Recompute it with your destination's signing secret and compare; this proves the request came from Olira and wasn't altered in transit:
+
+```csharp
+using System.Security.Cryptography;
+using System.Text;
+
+static bool VerifySignature(string secret, string header, byte[] rawBody, int maxSkewSeconds = 300)
+{
+    var parts = header.Split(',');
+    var tPart = parts.FirstOrDefault(p => p.StartsWith("t="));
+    if (tPart is null || !long.TryParse(tPart.Substring(2), out var timestamp))
+        return false;
+    if (Math.Abs(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - timestamp) > maxSkewSeconds)
+        return false;
+
+    var signatures = parts.Where(p => p.StartsWith("v1=")).Select(p => p.Substring(3));
+
+    using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
+    var signedPayload = Encoding.UTF8.GetBytes($"{timestamp}.").Concat(rawBody).ToArray();
+    var expected = Convert.ToHexString(hmac.ComputeHash(signedPayload)).ToLowerInvariant();
+
+    return signatures.Any(sig => CryptographicOperations.FixedTimeEquals(
+        Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(sig)));
+}
+```
+
+During secret rotation the header carries **two** `v1=` entries; check if *any* matches, don't assume there's exactly one. The timestamp is fresh on every attempt (including retries); reject a missing/malformed timestamp, one too far in the past (replay), or one unreasonably far in the future (clock skew or forgery) before checking the signature at all.
+
+### Digest batching is not fast
+
+A destination with `DigestSchedule` set doesn't deliver a batched trigger right after it fires: it sits at `Status: "buffered"` until the destination's `TimeOfDay` next arrives in its `Timezone`, which can be close to a full day later. Don't poll `ListActionDeliveries` expecting a quick result the way you would for an immediate trigger.
 
 ---
 

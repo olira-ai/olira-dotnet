@@ -7,7 +7,7 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Olira</RootNamespace>
     <AssemblyName>Olira</AssemblyName>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <Authors>Olira AI</Authors>
     <Company>Olira AI</Company>
     <Description>Olira .NET SDK — event ingestion, patient management, and patient state client for the Olira platform.</Description>
