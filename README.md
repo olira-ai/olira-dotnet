@@ -567,7 +567,7 @@ Runnable console apps under `examples/` (see [`examples/README.md`](examples/REA
 | `07_PatientToken` | Mint token, MCP Bearer forwarding |
 | `08_CohortManagement` | Create cohorts, enrol patients, assign templates, full lifecycle |
 | `09_OrgSchemaManagement` | Register, check, edit, list, view, and deprecate an org-native schema/mapping request |
-| `09_EhrIntegrations` | EHR integrations (catalog, connect, probe, sync, write-back) |
+| `09_EhrIntegrations` | Connected integrations (catalog, connect, probe, sync, write-back) |
 | `10_ProjectManagement` | Project (workspace) lifecycle: create, select, duplicate, rename, deprecate, restore, delete |
 | `11_Signals` | Passive accelerometer batch via `SendSignals`, wait for absorb |
 | `12_DocumentResourceIngestion` | Live `UploadDocument()` / OCR poll + historical `CreateIngestionJob(documents: …)` |
