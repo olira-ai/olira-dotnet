@@ -315,6 +315,7 @@ public class ActionsTests
     public void ActionTrigger_RecommendedDigestTriggersMatchesConsole()
     {
         Assert.Equal(new HashSet<string> { ActionTrigger.PatientStateChanged }, ActionTrigger.RecommendedDigestTriggers);
+        Assert.Equal("integration.sync.failed", ActionTrigger.IntegrationSyncFailed);
     }
 
     [Fact]

@@ -32,6 +32,9 @@ public static class ActionTrigger
     /// <summary>A historical ingestion job you started did not finish successfully.</summary>
     public const string IngestionFailed = "ingestion.failed";
 
+    /// <summary>A sync of one of your connected integrations did not finish successfully.</summary>
+    public const string IntegrationSyncFailed = "integration.sync.failed";
+
     /// <summary>
     /// Triggers frequent enough that sending every one immediately risks flooding the
     /// destination. The Olira Console defaults this trigger to digest batching when

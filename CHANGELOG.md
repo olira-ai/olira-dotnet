@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `RotateActionDestinationSecret`, `ListActionDeliveries`, `GetActionDelivery`,
   `RedeliverActionDelivery`. Requires the new `sdk:actions` scope. New models:
   `ActionTrigger` (string constants for the currently available triggers, plus
-  `RecommendedDigestTriggers`), `ActionDestination`, `ActionDestinationListResult`,
+  `RecommendedDigestTriggers`; includes `integration.sync.failed`), `ActionDestination`, `ActionDestinationListResult`,
   `ActionDestinationDeleteResult`, `WebhookDestinationConfig`,
   `EmailDestinationConfig`, `DigestSchedule`, `ActionDelivery`,
   `ActionDeliveryListResult`, `DeliveryAttempt`.

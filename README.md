@@ -206,7 +206,7 @@ client.DeprecateSchema(subtype: "widget_ping");
 
 ## Outbound Actions
 
-Get notified when something happens on the platform: a patient's data updated, a log arrived that changed nothing, a mapping error, or an ingestion job finished. Register a **destination** (a signed HTTPS webhook, or an email) and subscribe it to the triggers you care about. Requires the `sdk:actions` scope.
+Get notified when something happens on the platform: a patient's data updated, a log arrived that changed nothing, a mapping error, an ingestion job finished, or an integration failed to sync. Register a **destination** (a signed HTTPS webhook, or an email) and subscribe it to the triggers you care about. Requires the `sdk:actions` scope.
 
 ```csharp
 using Olira;
