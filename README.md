@@ -387,6 +387,13 @@ catch (ValidationError e)
 Pass `idempotencyKey` if you might retry after a network error or 5xx. Send the same key you used the first time — one key per resource, not per mapped event. A treatment plan from an EHR can produce several Olira events; Olira records `your-key:clinical_plan_item` and `your-key:treatment_phase` internally so a retry does not duplicate either:
 
 ```csharp
+var resource = new Dictionary<string, object?>
+{
+    ["resourceType"] = "Condition",
+    ["code"] = new Dictionary<string, object?> { ["text"] = "Type 2 diabetes" },
+    ["subject"] = new Dictionary<string, object?> { ["reference"] = $"Patient/{patientId}" },
+};
+
 // Safe to send this exact call again if the response is lost to a network error.
 var result = client.LogFhir(patientId, resource, idempotencyKey: "condition-2026-01-10");
 ```

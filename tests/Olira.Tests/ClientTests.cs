@@ -154,6 +154,36 @@ public class ClientTests
     }
 
     [Fact]
+    public async Task LogFhirAsync_BareDefaultLiteralAsThirdArgument_ResolvesToCancellationTokenOverload()
+    {
+        // The bare `default` literal (as opposed to a typed CancellationToken.None) can in
+        // principle convert to either the idempotencyKey (string?) or cancellationToken
+        // (CancellationToken) parameter, so this specifically confirms the compiler does not
+        // treat LogFhirAsync(patientId, resource, default) as ambiguous: per C# overload
+        // resolution (§12.6.4.3), the 3-param overload requiring zero omitted optional
+        // arguments is preferred over the 4-param overload, which would need to omit
+        // cancellationToken. This must keep compiling and resolving to the CancellationToken
+        // overload, not the idempotencyKey one.
+        JsonElement? body = null;
+        var mock = new MockHttpMessageHandler();
+        mock.CaptureJson(
+            HttpMethod.Post,
+            $"{TestHelpers.BaseUrl}/v1/fhir/resource",
+            """{"accepted":1,"failed":0,"errors":[]}""",
+            b => body = b);
+
+        using var client = TestHelpers.CreateClient(mock);
+        var result = await client.LogFhirAsync(
+            "p_123",
+            new Dictionary<string, object?> { ["resourceType"] = "Patient", ["id"] = "abc" },
+            default);
+
+        Assert.Equal(1, result.Accepted);
+        Assert.NotNull(body);
+        Assert.False(body.Value.TryGetProperty("idempotency_key", out _));
+    }
+
+    [Fact]
     public void Flush_NoopWhenNoWorker()
     {
         using var client = TestHelpers.CreateClient(new MockHttpMessageHandler(), asyncFlush: false);
