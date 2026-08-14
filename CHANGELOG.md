@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   overload, so existing 3-positional-argument callers now resolve to this overload instead of a
   compile error.
 
+### Fixed
+- `LogFhir`/`LogFhirAsync` no longer retries automatically on a transport-level network error or
+  5xx when no `idempotencyKey` is supplied. Without a key, the server has no stable dedup anchor,
+  so replaying a request whose response was lost could create a duplicate event — the transport's
+  own retry now only fires when a key makes that replay safe.
+
 ## [0.4.0] - 2026-08-13
 
 ### Added

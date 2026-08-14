@@ -1373,6 +1373,7 @@ public sealed partial class HttpTransport
                 HttpMethod.Post,
                 "/v1/fhir/resource",
                 json: body,
+                retryable: !string.IsNullOrEmpty(idempotencyKey),
                 cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         return DeserializeRequired<BatchResult>(raw);
