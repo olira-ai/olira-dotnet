@@ -1352,23 +1352,27 @@ public sealed partial class HttpTransport
     }
 
     /// <summary>Submit a single FHIR R4 resource (POST /v1/fhir/resource).</summary>
-    public BatchResult LogFhir(string patientId, object resource) =>
-        LogFhirAsync(patientId, resource).GetAwaiter().GetResult();
+    public BatchResult LogFhir(string patientId, object resource, string? idempotencyKey = null) =>
+        LogFhirAsync(patientId, resource, idempotencyKey).GetAwaiter().GetResult();
 
     /// <inheritdoc cref="LogFhir"/>
     public async Task<BatchResult> LogFhirAsync(
         string patientId,
         object resource,
+        string? idempotencyKey = null,
         CancellationToken cancellationToken = default)
     {
+        var body = new Dictionary<string, object?>
+        {
+            ["patient_id"] = patientId,
+            ["resource"] = resource,
+        };
+        if (!string.IsNullOrEmpty(idempotencyKey)) body["idempotency_key"] = idempotencyKey;
+
         var raw = await RequestAsync(
                 HttpMethod.Post,
                 "/v1/fhir/resource",
-                json: new Dictionary<string, object?>
-                {
-                    ["patient_id"] = patientId,
-                    ["resource"] = resource,
-                },
+                json: body,
                 cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         return DeserializeRequired<BatchResult>(raw);

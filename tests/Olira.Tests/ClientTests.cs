@@ -87,6 +87,73 @@ public class ClientTests
     }
 
     [Fact]
+    public void LogFhir_OmitsIdempotencyKeyWhenNotSet()
+    {
+        JsonElement? body = null;
+        var mock = new MockHttpMessageHandler();
+        mock.CaptureJson(
+            HttpMethod.Post,
+            $"{TestHelpers.BaseUrl}/v1/fhir/resource",
+            """{"accepted":1,"failed":0,"errors":[]}""",
+            b => body = b);
+
+        using var client = TestHelpers.CreateClient(mock);
+        client.LogFhir("p_123", new Dictionary<string, object?> { ["resourceType"] = "Patient", ["id"] = "abc" });
+
+        Assert.NotNull(body);
+        Assert.Equal("p_123", body.Value.GetProperty("patient_id").GetString());
+        Assert.False(body.Value.TryGetProperty("idempotency_key", out _));
+    }
+
+    [Fact]
+    public void LogFhir_IncludesIdempotencyKeyWhenSet()
+    {
+        JsonElement? body = null;
+        var mock = new MockHttpMessageHandler();
+        mock.CaptureJson(
+            HttpMethod.Post,
+            $"{TestHelpers.BaseUrl}/v1/fhir/resource",
+            """{"accepted":1,"failed":0,"errors":[]}""",
+            b => body = b);
+
+        using var client = TestHelpers.CreateClient(mock);
+        client.LogFhir(
+            "p_123",
+            new Dictionary<string, object?> { ["resourceType"] = "Patient", ["id"] = "abc" },
+            idempotencyKey: "retry-key-1");
+
+        Assert.NotNull(body);
+        Assert.Equal("retry-key-1", body.Value.GetProperty("idempotency_key").GetString());
+    }
+
+    [Fact]
+    public async Task LogFhirAsync_LegacyPositionalCancellationTokenOverload_StillResolves()
+    {
+        // Regression: LogFhirAsync gained an idempotencyKey parameter before CancellationToken.
+        // A caller passing a CancellationToken positionally as the 3rd argument (the pre-existing
+        // call shape) must still resolve to a CancellationToken overload, not silently bind to
+        // idempotencyKey (a type mismatch would make that a compile error, not a silent bug —
+        // but this pins the overload exists and behaves correctly at the value level too).
+        JsonElement? body = null;
+        var mock = new MockHttpMessageHandler();
+        mock.CaptureJson(
+            HttpMethod.Post,
+            $"{TestHelpers.BaseUrl}/v1/fhir/resource",
+            """{"accepted":1,"failed":0,"errors":[]}""",
+            b => body = b);
+
+        using var client = TestHelpers.CreateClient(mock);
+        var result = await client.LogFhirAsync(
+            "p_123",
+            new Dictionary<string, object?> { ["resourceType"] = "Patient", ["id"] = "abc" },
+            CancellationToken.None);
+
+        Assert.Equal(1, result.Accepted);
+        Assert.NotNull(body);
+        Assert.False(body.Value.TryGetProperty("idempotency_key", out _));
+    }
+
+    [Fact]
     public void Flush_NoopWhenNoWorker()
     {
         using var client = TestHelpers.CreateClient(new MockHttpMessageHandler(), asyncFlush: false);

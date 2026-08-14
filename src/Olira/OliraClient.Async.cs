@@ -37,10 +37,12 @@ public sealed partial class OliraClient
     public async Task<BatchResult> LogFhirAsync(
         string patientId,
         object resource,
+        string? idempotencyKey = null,
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        var result = await _transport.LogFhirAsync(patientId, resource, cancellationToken).ConfigureAwait(false);
+        var result = await _transport.LogFhirAsync(patientId, resource, idempotencyKey, cancellationToken)
+            .ConfigureAwait(false);
         if (result.Accepted == 0)
         {
             var msg = result.Errors.Count > 0
@@ -51,6 +53,14 @@ public sealed partial class OliraClient
 
         return result;
     }
+
+    /// <summary>
+    /// Backward-compatible overload for callers still passing a <see cref="CancellationToken"/>
+    /// positionally as the third argument (pre-idempotencyKey call shape). Prefer the
+    /// <c>idempotencyKey</c>-accepting overload for new code.
+    /// </summary>
+    public Task<BatchResult> LogFhirAsync(string patientId, object resource, CancellationToken cancellationToken) =>
+        LogFhirAsync(patientId, resource, idempotencyKey: null, cancellationToken: cancellationToken);
 
     /// <summary>Async direct batch send.</summary>
     public async Task<BatchResult> LogBatchAsync(

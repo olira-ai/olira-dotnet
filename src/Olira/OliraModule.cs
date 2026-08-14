@@ -103,8 +103,8 @@ public static class OliraModule
     public static BatchResult LogBatch(IReadOnlyList<LogSpec> events) => GetClient().LogBatch(events);
 
     /// <summary>Submit a FHIR R4 resource for immediate ingestion.</summary>
-    public static BatchResult LogFhir(string patientId, object resource) =>
-        GetClient().LogFhir(patientId, resource);
+    public static BatchResult LogFhir(string patientId, object resource, string? idempotencyKey = null) =>
+        GetClient().LogFhir(patientId, resource, idempotencyKey);
 
     /// <summary>Create a patient.</summary>
     public static Patient CreatePatient(

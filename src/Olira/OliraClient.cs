@@ -223,10 +223,17 @@ public sealed partial class OliraClient : IDisposable, IAsyncDisposable
     /// Submit a single FHIR R4 resource for immediate ingestion.
     /// Raises <see cref="ValidationError"/> if the resource produced no accepted events.
     /// </summary>
-    public BatchResult LogFhir(string patientId, object resource)
+    /// <param name="patientId">The patient to log this event for.</param>
+    /// <param name="resource">A FHIR R4 JSON resource object with a <c>resourceType</c> field.</param>
+    /// <param name="idempotencyKey">
+    /// Makes the call safe to retry after a network error or 5xx. Pass the same key
+    /// you sent the first time — one key per resource, not per mapped event. A treatment
+    /// plan from an EHR can produce several Olira events; Olira applies the key to each.
+    /// </param>
+    public BatchResult LogFhir(string patientId, object resource, string? idempotencyKey = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        var result = _transport.LogFhir(patientId, resource);
+        var result = _transport.LogFhir(patientId, resource, idempotencyKey);
         if (result.Accepted == 0)
         {
             var msg = result.Errors.Count > 0
