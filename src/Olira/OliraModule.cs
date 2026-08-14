@@ -334,6 +334,66 @@ public static class OliraModule
     /// <summary>Delete a deprecated project.</summary>
     public static void DeleteProject(string project) => GetClient().DeleteProject(project);
 
+    /// <summary>Register an outbound-actions destination (webhook or email).</summary>
+    public static ActionDestination CreateActionDestination(
+        WebhookDestinationConfig? webhookConfig = null,
+        EmailDestinationConfig? emailConfig = null,
+        IReadOnlyList<string>? subscribedTriggers = null,
+        string? description = null,
+        IReadOnlyDictionary<string, string>? staticHeaders = null,
+        int? rateLimitPerMinute = null,
+        DigestSchedule? digestSchedule = null) =>
+        GetClient().CreateActionDestination(
+            webhookConfig, emailConfig, subscribedTriggers, description, staticHeaders, rateLimitPerMinute,
+            digestSchedule);
+
+    /// <summary>List the organisation's outbound-actions destinations.</summary>
+    public static ActionDestinationListResult ListActionDestinations() => GetClient().ListActionDestinations();
+
+    /// <summary>Get one outbound-actions destination by id.</summary>
+    public static ActionDestination GetActionDestination(string destinationId) =>
+        GetClient().GetActionDestination(destinationId);
+
+    /// <summary>Update a destination's config, subscriptions, or status.</summary>
+    public static ActionDestination UpdateActionDestination(
+        string destinationId,
+        string? url = null,
+        string? toEmail = null,
+        string? subject = null,
+        string? description = null,
+        IReadOnlyList<string>? subscribedTriggers = null,
+        string? status = null,
+        IReadOnlyDictionary<string, string>? staticHeaders = null,
+        DigestSchedule? digestSchedule = null,
+        bool clearDigestSchedule = false) =>
+        GetClient().UpdateActionDestination(
+            destinationId, url, toEmail, subject, description, subscribedTriggers, status, staticHeaders,
+            digestSchedule, clearDigestSchedule);
+
+    /// <summary>Disables a destination. In-flight deliveries are stopped and will not be retried.</summary>
+    public static ActionDestinationDeleteResult DeleteActionDestination(string destinationId) =>
+        GetClient().DeleteActionDestination(destinationId);
+
+    /// <summary>Rotate a destination's signing secret.</summary>
+    public static ActionDestination RotateActionDestinationSecret(string destinationId) =>
+        GetClient().RotateActionDestinationSecret(destinationId);
+
+    /// <summary>List deliveries, newest first, cursor-paginated.</summary>
+    public static ActionDeliveryListResult ListActionDeliveries(
+        string? destinationId = null,
+        string? status = null,
+        string? trigger = null,
+        string? cursor = null,
+        int? limit = null) =>
+        GetClient().ListActionDeliveries(destinationId, status, trigger, cursor, limit);
+
+    /// <summary>Get one delivery's full attempt history, including the exact JSON that was sent.</summary>
+    public static ActionDelivery GetActionDelivery(string deliveryId) => GetClient().GetActionDelivery(deliveryId);
+
+    /// <summary>Resends the same body as the original delivery, not a newly generated one.</summary>
+    public static ActionDelivery RedeliverActionDelivery(string deliveryId) =>
+        GetClient().RedeliverActionDelivery(deliveryId);
+
     /// <summary>Create a cohort.</summary>
     public static Cohort CreateCohort(string name, string? description = null) =>
         GetClient().CreateCohort(name, description);

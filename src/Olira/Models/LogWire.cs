@@ -70,7 +70,7 @@ public sealed class LogSpec
     public Dictionary<string, object?>? Metadata { get; set; }
 
     /// <summary>
-    /// Request write-back of this log into the org's connected EHR.
+    /// Request write-back of this log into the org's connected system.
     /// Silently ignored unless the API key carries <c>sdk:integration-write</c>
     /// and the integration passes the platform write gate.
     /// </summary>

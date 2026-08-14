@@ -296,6 +296,109 @@ public sealed partial class OliraClient
         return _transport.DeleteProjectAsync(project, cancellationToken);
     }
 
+    /// <inheritdoc cref="CreateActionDestination"/>
+    public Task<ActionDestination> CreateActionDestinationAsync(
+        WebhookDestinationConfig? webhookConfig = null,
+        EmailDestinationConfig? emailConfig = null,
+        IReadOnlyList<string>? subscribedTriggers = null,
+        string? description = null,
+        IReadOnlyDictionary<string, string>? staticHeaders = null,
+        int? rateLimitPerMinute = null,
+        DigestSchedule? digestSchedule = null,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var body = BuildCreateActionDestinationBody(
+            webhookConfig, emailConfig, subscribedTriggers, description, staticHeaders, rateLimitPerMinute,
+            digestSchedule);
+        return _transport.CreateActionDestinationAsync(body, cancellationToken);
+    }
+
+    /// <inheritdoc cref="ListActionDestinations"/>
+    public Task<ActionDestinationListResult> ListActionDestinationsAsync(CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.ListActionDestinationsAsync(cancellationToken);
+    }
+
+    /// <inheritdoc cref="GetActionDestination"/>
+    public Task<ActionDestination> GetActionDestinationAsync(
+        string destinationId,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.GetActionDestinationAsync(destinationId, cancellationToken);
+    }
+
+    /// <inheritdoc cref="UpdateActionDestination"/>
+    public Task<ActionDestination> UpdateActionDestinationAsync(
+        string destinationId,
+        string? url = null,
+        string? toEmail = null,
+        string? subject = null,
+        string? description = null,
+        IReadOnlyList<string>? subscribedTriggers = null,
+        string? status = null,
+        IReadOnlyDictionary<string, string>? staticHeaders = null,
+        DigestSchedule? digestSchedule = null,
+        bool clearDigestSchedule = false,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var body = BuildUpdateActionDestinationBody(
+            url, toEmail, subject, description, subscribedTriggers, status, staticHeaders, digestSchedule,
+            clearDigestSchedule);
+        return _transport.UpdateActionDestinationAsync(destinationId, body, cancellationToken);
+    }
+
+    /// <inheritdoc cref="DeleteActionDestination"/>
+    public Task<ActionDestinationDeleteResult> DeleteActionDestinationAsync(
+        string destinationId,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.DeleteActionDestinationAsync(destinationId, cancellationToken);
+    }
+
+    /// <inheritdoc cref="RotateActionDestinationSecret"/>
+    public Task<ActionDestination> RotateActionDestinationSecretAsync(
+        string destinationId,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.RotateActionDestinationSecretAsync(destinationId, cancellationToken);
+    }
+
+    /// <inheritdoc cref="ListActionDeliveries"/>
+    public Task<ActionDeliveryListResult> ListActionDeliveriesAsync(
+        string? destinationId = null,
+        string? status = null,
+        string? trigger = null,
+        string? cursor = null,
+        int? limit = null,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var parameters = BuildListActionDeliveriesParams(destinationId, status, trigger, cursor, limit);
+        return _transport.ListActionDeliveriesAsync(parameters, cancellationToken);
+    }
+
+    /// <inheritdoc cref="GetActionDelivery"/>
+    public Task<ActionDelivery> GetActionDeliveryAsync(string deliveryId, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.GetActionDeliveryAsync(deliveryId, cancellationToken);
+    }
+
+    /// <inheritdoc cref="RedeliverActionDelivery"/>
+    public Task<ActionDelivery> RedeliverActionDeliveryAsync(
+        string deliveryId,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _transport.RedeliverActionDeliveryAsync(deliveryId, cancellationToken);
+    }
+
     /// <summary>Async create cohort.</summary>
     public Task<Cohort> CreateCohortAsync(
         string name,

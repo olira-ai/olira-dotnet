@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-08-13
+
+### Added
+- Outbound-actions APIs on `OliraClient` (sync + async) and `OliraModule`:
+  `CreateActionDestination`, `ListActionDestinations`, `GetActionDestination`,
+  `UpdateActionDestination`, `DeleteActionDestination`,
+  `RotateActionDestinationSecret`, `ListActionDeliveries`, `GetActionDelivery`,
+  `RedeliverActionDelivery`. Requires the new `sdk:actions` scope. New models:
+  `ActionTrigger` (string constants for the currently available triggers, plus
+  `RecommendedDigestTriggers`; includes `integration.sync.failed`), `ActionDestination`, `ActionDestinationListResult`,
+  `ActionDestinationDeleteResult`, `WebhookDestinationConfig`,
+  `EmailDestinationConfig`, `DigestSchedule`, `ActionDelivery`,
+  `ActionDeliveryListResult`, `DeliveryAttempt`.
+
 ## [0.3.0] - 2026-08-12
 
 ### Added
