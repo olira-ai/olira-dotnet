@@ -103,8 +103,8 @@ public static class OliraModule
     public static BatchResult LogBatch(IReadOnlyList<LogSpec> events) => GetClient().LogBatch(events);
 
     /// <summary>Submit a FHIR R4 resource for immediate ingestion.</summary>
-    public static BatchResult LogFhir(string patientId, object resource) =>
-        GetClient().LogFhir(patientId, resource);
+    public static BatchResult LogFhir(string patientId, object resource, string? idempotencyKey = null) =>
+        GetClient().LogFhir(patientId, resource, idempotencyKey);
 
     /// <summary>Create a patient.</summary>
     public static Patient CreatePatient(
@@ -139,13 +139,14 @@ public static class OliraModule
     /// <summary>Get a patient by id.</summary>
     public static Patient GetPatient(string patientId) => GetClient().GetPatient(patientId);
 
-    /// <summary>List patients.</summary>
+    /// <summary>List patients. See <see cref="OliraClient.ListPatients"/> for filter semantics.</summary>
     public static PatientListResult ListPatients(
         int limit = 100,
         int offset = 0,
         string? externalSystem = null,
-        string? externalValue = null) =>
-        GetClient().ListPatients(limit, offset, externalSystem, externalValue);
+        string? externalValue = null,
+        string? integrationId = null) =>
+        GetClient().ListPatients(limit, offset, externalSystem, externalValue, integrationId);
 
     /// <summary>Update a patient.</summary>
     public static Patient UpdatePatient(
@@ -174,6 +175,20 @@ public static class OliraModule
             diseaseStage,
             externalIdentifiers,
             metadata);
+
+    /// <summary>Add one or more external identifiers to a patient.</summary>
+    public static ExternalIdentifierMutationResult AddPatientExternalIdentifiers(
+        string patientId, IReadOnlyList<ExternalIdentifier> identifiers) =>
+        GetClient().AddPatientExternalIdentifiers(patientId, identifiers);
+
+    /// <summary>Remove one or more external identifiers from a patient. Each entry is a matcher —
+    /// System+Value for one exact identifier, System alone for every identifier of that system, or
+    /// IntegrationId alone for every identifier owned by that integration instance. Can match ANY
+    /// identifier, including one owned by a platform integration — a deliberate, irreversible
+    /// unlink.</summary>
+    public static ExternalIdentifierMutationResult RemovePatientExternalIdentifiers(
+        string patientId, IReadOnlyList<ExternalIdentifierMatcher> identifiers) =>
+        GetClient().RemovePatientExternalIdentifiers(patientId, identifiers);
 
     /// <summary>Delete a patient.</summary>
     public static void DeletePatient(string patientId, bool permanent = false) =>

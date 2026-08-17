@@ -51,12 +51,24 @@ public sealed partial class OliraClient
         return _transport.GetPatient(patientId);
     }
 
-    /// <summary>List patients in your organisation. Requires api:manage-patients scope.</summary>
+    /// <summary>
+    /// List patients in your organisation. Requires api:manage-patients scope.
+    /// Filters compose as AND on the same identifier: <paramref name="externalSystem"/> alone finds
+    /// every patient with an identifier for that system (e.g. every Epic patient);
+    /// <paramref name="externalSystem"/> + <paramref name="externalValue"/> finds every patient with
+    /// that exact identifier — usually one, but not guaranteed: two integration instances of the same
+    /// system can share a value, so the same (system, value) pair can resolve to more than one
+    /// patient. Add <paramref name="integrationId"/> when you need exactly the row for one specific
+    /// instance. <paramref name="integrationId"/> alone finds every patient linked to that specific
+    /// integration instance, regardless of system or value.
+    /// <paramref name="externalValue"/> requires <paramref name="externalSystem"/>.
+    /// </summary>
     public PatientListResult ListPatients(
         int limit = 100,
         int offset = 0,
         string? externalSystem = null,
-        string? externalValue = null)
+        string? externalValue = null,
+        string? integrationId = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         var parameters = new Dictionary<string, object?>
@@ -74,10 +86,21 @@ public sealed partial class OliraClient
             parameters["external_value"] = externalValue;
         }
 
+        if (integrationId is not null)
+        {
+            parameters["integration_id"] = integrationId;
+        }
+
         return _transport.ListPatients(parameters);
     }
 
-    /// <summary>Update a patient. Requires api:manage-patients scope.</summary>
+    /// <summary>
+    /// Update a patient. Requires api:manage-patients scope.
+    /// <paramref name="externalIdentifiers"/> is merge/append-only: it adds any
+    /// (system, value) pair not already stored, and never modifies or removes one
+    /// that is — including one a platform integration owns. An empty list is
+    /// rejected; use <see cref="RemovePatientExternalIdentifiers"/> to remove one.
+    /// </summary>
     public Patient UpdatePatient(
         string patientId,
         string? firstName = null,
@@ -93,6 +116,7 @@ public sealed partial class OliraClient
         Dictionary<string, object?>? metadata = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ValidateExternalIdentifiersForUpdate(externalIdentifiers);
         var req = new UpdatePatientRequest
         {
             FirstName = firstName,
@@ -108,6 +132,96 @@ public sealed partial class OliraClient
             Metadata = metadata,
         };
         return _transport.UpdatePatient(patientId, ToBody(req));
+    }
+
+    /// <summary>
+    /// Fail fast, client-side, on the same empty-list case the server rejects with 422 —
+    /// avoids a round trip for a request that can never succeed.
+    /// </summary>
+    private static void ValidateExternalIdentifiersForUpdate(IReadOnlyList<ExternalIdentifier>? externalIdentifiers)
+    {
+        if (externalIdentifiers is { Count: 0 })
+        {
+            throw new ValidationError(
+                "externalIdentifiers cannot be emptied via UpdatePatient — it only adds identifiers. " +
+                "Use RemovePatientExternalIdentifiers to remove one.");
+        }
+    }
+
+    /// <summary>
+    /// Add one or more external identifiers to a patient. Requires api:manage-patients scope.
+    /// Idempotent — an identifier already present (matched on system + value) is skipped,
+    /// not modified. Only System and Value are sent; IntegrationId is platform-owned and
+    /// stripped from the request even if set on the objects you pass in.
+    /// </summary>
+    public ExternalIdentifierMutationResult AddPatientExternalIdentifiers(
+        string patientId, IReadOnlyList<ExternalIdentifier> identifiers)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var body = new Dictionary<string, object?>
+        {
+            ["identifiers"] = identifiers.Select(i => new Dictionary<string, object?>
+            {
+                ["system"] = i.System,
+                ["value"] = i.Value,
+            }).ToList(),
+        };
+        return _transport.AddPatientExternalIdentifiers(patientId, body);
+    }
+
+    /// <summary>
+    /// Remove one or more external identifiers from a patient. Requires api:manage-patients scope.
+    /// The only way to remove an external identifier — <see cref="UpdatePatient"/> never removes.
+    /// Each entry is a matcher (see <see cref="ExternalIdentifierMatcher"/>), not just an exact
+    /// identifier: <c>System</c> + <c>Value</c> targets one identifier; <c>System</c> alone removes
+    /// every identifier for that system (e.g. every Epic identifier across every connected Epic
+    /// instance); <c>IntegrationId</c> alone removes every identifier owned by that specific
+    /// integration instance. Can match ANY identifier, including one owned by a platform
+    /// integration: doing so is a deliberate, irreversible unlink. Under linked_only import mode
+    /// the patient immediately stops receiving further data from that integration. Idempotent — a
+    /// matcher that matches nothing is skipped, not an error.
+    /// <para>
+    /// Call <see cref="GetPatient"/> first and check each identifier's <c>IntegrationId</c> to
+    /// know the consequence before you remove it: <c>null</c> means you supplied it yourself, so
+    /// removal has no side effects beyond dropping that row; non-null means a platform
+    /// integration owns it, and removing it unlinks the patient from that integration.
+    /// </para>
+    /// </summary>
+    public ExternalIdentifierMutationResult RemovePatientExternalIdentifiers(
+        string patientId, IReadOnlyList<ExternalIdentifierMatcher> identifiers)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var body = new Dictionary<string, object?>
+        {
+            ["identifiers"] = identifiers.Select(MatcherToDictionary).ToList(),
+        };
+        return _transport.RemovePatientExternalIdentifiers(patientId, body);
+    }
+
+    /// <summary>
+    /// Builds the wire body for a matcher, omitting unset fields. Fails fast, client-side,
+    /// on the same invalid-matcher cases the server rejects with 422 — avoids a round trip
+    /// for a request that can never succeed, and avoids ever sending an empty matcher
+    /// (which would mean "match everything").
+    /// </summary>
+    private static Dictionary<string, object?> MatcherToDictionary(ExternalIdentifierMatcher matcher)
+    {
+        if (matcher.System is null && matcher.Value is null && matcher.IntegrationId is null)
+        {
+            throw new ValidationError(
+                "ExternalIdentifierMatcher requires at least one of System, Value, or IntegrationId.");
+        }
+
+        if (matcher.Value is not null && matcher.System is null)
+        {
+            throw new ValidationError("ExternalIdentifierMatcher.Value requires System to also be set.");
+        }
+
+        var dict = new Dictionary<string, object?>();
+        if (matcher.System is not null) dict["system"] = matcher.System;
+        if (matcher.Value is not null) dict["value"] = matcher.Value;
+        if (matcher.IntegrationId is not null) dict["integration_id"] = matcher.IntegrationId;
+        return dict;
     }
 
     /// <summary>Delete a patient. Soft-deletes by default.</summary>

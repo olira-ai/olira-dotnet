@@ -137,6 +137,22 @@ result = client.LogFhir(
     });
 Console.WriteLine($"Appointment       — accepted={result.Accepted}");
 
+// ── Safe retry with idempotencyKey ────────────────────────────────────────────
+// If a call's response is lost to a network error or 5xx, resend it verbatim —
+// the same idempotencyKey guarantees no duplicate event is created.
+var retryKey = "condition-2026-01-10";
+var conditionResource = new Dictionary<string, object?>
+{
+    ["resourceType"] = "Condition",
+    ["id"] = "condition-retry-demo",
+    ["code"] = new Dictionary<string, object?> { ["text"] = "Type 2 diabetes" },
+    ["subject"] = new Dictionary<string, object?> { ["reference"] = $"Patient/{pid}" },
+};
+result = client.LogFhir(patientId: pid, resource: conditionResource, idempotencyKey: retryKey);
+Console.WriteLine($"Retry demo (1st)  — accepted={result.Accepted}");
+result = client.LogFhir(patientId: pid, resource: conditionResource, idempotencyKey: retryKey);
+Console.WriteLine($"Retry demo (2nd)  — accepted={result.Accepted} (deduped, no new event created)");
+
 // ── Error handling — unsupported resource type ────────────────────────────────
 try
 {

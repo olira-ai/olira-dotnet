@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-17
+
+### Added
+- Optional `idempotencyKey` parameter on `LogFhir`/`LogFhirAsync` (`OliraClient`, `OliraModule`),
+  matching `LogBatch`/`LogSpec`. Makes the call safe to retry after a network error or 5xx.
+  One FHIR resource can map to several Olira events; pass one key for the call — the server
+  applies it to each mapped event.
+- `LogFhirAsync(string, object, CancellationToken)` overload preserving the pre-`idempotencyKey`
+  positional call shape — `idempotencyKey` was inserted before `CancellationToken` on the main
+  overload, so existing 3-positional-argument callers now resolve to this overload instead of a
+  compile error.
+- `ExternalIdentifier.IntegrationId` — the platform-assigned id of the integration that owns an
+  identifier (e.g. an Epic sync). Read-only; present on `GetPatient`/`ListPatients` responses, and
+  safe to omit or echo unchanged on `UpdatePatient`.
+- `AddPatientExternalIdentifiers`/`RemovePatientExternalIdentifiers` (`OliraClient` sync + async,
+  and `OliraModule`) — add or remove one or more external identifiers on a patient without a full
+  `UpdatePatient` replace. Idempotent. `RemovePatientExternalIdentifiers` takes
+  `ExternalIdentifierMatcher` entries: `System` + `Value` (one row), `System` only
+  (every identifier for that system — `System = "epic"` unlinks every connected Epic
+  instance), `IntegrationId` only (that instance), or `System` + `IntegrationId`.
+  It is the only way to delete an identifier, and can remove one owned by a platform
+  integration — a deliberate, irreversible unlink. An empty matcher, or `Value` set
+  without `System`, is rejected client-side before the request is sent.
+- `ListPatients(integrationId: ...)` and `ListPatients(externalSystem: ...)` without a
+  value — find every patient linked to one integration instance, or every patient with
+  an identifier for that system. `externalValue` still requires `externalSystem`.
+
+### Fixed
+- `LogFhir`/`LogFhirAsync` no longer retries automatically on a transport-level network error or
+  5xx when no `idempotencyKey` is supplied. Without a key, the server has no stable dedup anchor,
+  so replaying a request whose response was lost could create a duplicate event — the transport's
+  own retry now only fires when a key makes that replay safe.
+- `ExternalIdentifier` previously had no `IntegrationId` property, so a `GetPatient` → append →
+  `UpdatePatient` round-trip silently stripped a stored integration link. The server now also
+  treats `UpdatePatient`'s `ExternalIdentifiers` as merge/append-only, so this can no longer
+  happen even with an older SDK or a raw HTTP client.
+
+### Changed
+- **Breaking:** `UpdatePatient(externalIdentifiers: ...)` no longer replaces the stored list — it
+  merges. New (System, Value) pairs are added; anything already stored, including a
+  platform-owned identifier, is left untouched whether or not you include it. An empty list is
+  now rejected (422) instead of clearing every identifier — use
+  `RemovePatientExternalIdentifiers` to remove one.
+
 ## [0.4.0] - 2026-08-13
 
 ### Added

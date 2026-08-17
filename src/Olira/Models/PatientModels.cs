@@ -13,6 +13,47 @@ public sealed class ExternalIdentifier
 
     /// <summary>Patient ID in that system.</summary>
     public string Value { get; set; } = "";
+
+    /// <summary>
+    /// Platform-assigned id of the integration that owns this identifier (e.g. an Epic
+    /// sync). Read-only — set by Olira, never by you. Null for identifiers you supply
+    /// yourself. <c>UpdatePatient</c> only ever adds identifiers, so it's safe to leave
+    /// this as-is when echoing a value from <c>GetPatient</c>/<c>ListPatients</c>; prefer
+    /// <c>AddPatientExternalIdentifiers</c>/<c>RemovePatientExternalIdentifiers</c> for
+    /// incremental changes.
+    /// </summary>
+    public string? IntegrationId { get; set; }
+}
+
+/// <summary>
+/// Selects one or more stored external identifiers to remove from a patient — a filter,
+/// not a full identifier. Every field is nullable and rows match if they satisfy every
+/// field you set. At least one field is required.
+///
+/// <list type="bullet">
+/// <item><description><c>System</c> + <c>Value</c>: exactly one identifier (the common case).</description></item>
+/// <item><description><c>System</c> only: every identifier for that system (e.g. every Epic
+/// identifier, across every Epic instance the org has connected). <c>System = "epic"</c>
+/// unlinks the patient from every connected Epic instance — use <c>IntegrationId</c> alone
+/// to drop one hospital.</description></item>
+/// <item><description><c>IntegrationId</c> only: every identifier owned by that specific
+/// integration instance, regardless of system or value.</description></item>
+/// <item><description><c>System</c> + <c>IntegrationId</c>: that system on that instance only.</description></item>
+/// </list>
+///
+/// <c>Value</c> without <c>System</c> is rejected — a bare value isn't enough
+/// to know which system's namespace it belongs to.
+/// </summary>
+public sealed class ExternalIdentifierMatcher
+{
+    /// <summary>System name to match, e.g. "epic". Omit to match any system.</summary>
+    public string? System { get; set; }
+
+    /// <summary>Value to match. Requires <see cref="System"/> to also be set.</summary>
+    public string? Value { get; set; }
+
+    /// <summary>Integration instance id to match. Omit to match any (or no) integration.</summary>
+    public string? IntegrationId { get; set; }
 }
 
 /// <summary>
@@ -99,6 +140,10 @@ public sealed class CreatePatientRequest
 /// <summary>
 /// Request body for updating a patient (all fields optional).
 /// Only set fields are changed; omitted fields are left as-is.
+/// <see cref="ExternalIdentifiers"/> is merge/append-only: any (system, value) pair not
+/// already stored is added, and anything already stored — including a platform
+/// integration's identifier — is left untouched. An empty list is rejected; use
+/// <c>RemovePatientExternalIdentifiers</c> to remove one.
 /// </summary>
 public sealed class UpdatePatientRequest
 {
@@ -221,6 +266,25 @@ public sealed class PatientBatchResult
 
     /// <summary>Per-item errors.</summary>
     public List<BatchError> Errors { get; set; } = [];
+}
+
+/// <summary>Result of AddPatientExternalIdentifiers/RemovePatientExternalIdentifiers.</summary>
+public sealed class ExternalIdentifierMutationResult
+{
+    /// <summary>Olira-assigned patient id.</summary>
+    public string PatientId { get; set; } = "";
+
+    /// <summary>Number of identifiers added.</summary>
+    public int Added { get; set; }
+
+    /// <summary>Number of identifiers removed.</summary>
+    public int Removed { get; set; }
+
+    /// <summary>Number of identifiers skipped (already present, or not found on remove).</summary>
+    public int Skipped { get; set; }
+
+    /// <summary>The patient's full external identifier list after the mutation.</summary>
+    public List<ExternalIdentifier> ExternalIdentifiers { get; set; } = [];
 }
 
 /// <summary>

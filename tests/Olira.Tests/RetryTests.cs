@@ -84,4 +84,62 @@ public class RetryTests
             transport.CreateProject(new Dictionary<string, object?> { ["name"] = "Dev Sandbox" }));
         Assert.Equal(1, calls);
     }
+
+    [Fact]
+    public void LogFhir_WithoutIdempotencyKey_DoesNotRetryOn500()
+    {
+        // No key means no stable dedup anchor server-side — a lost response could
+        // otherwise be replayed by the transport itself and duplicate the event.
+        var calls = 0;
+        var mock = new MockHttpMessageHandler();
+        mock.When(HttpMethod.Post, $"{BaseUrl}/v1/fhir/resource")
+            .Respond(_ =>
+            {
+                calls++;
+                return new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent("Internal Server Error"),
+                };
+            });
+
+        using var transport = new HttpTransport(BaseUrl, "olira_test_key", maxRetries: 3, handler: mock);
+        Assert.Throws<ServerError>(() =>
+            transport.LogFhir("p_1", new Dictionary<string, object?> { ["resourceType"] = "Patient", ["id"] = "abc" }));
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public void LogFhir_WithIdempotencyKey_RetriesOn500()
+    {
+        // A caller-supplied key makes the server-side dedup anchor stable, so the
+        // transport's own retry is safe — must retry the way any other idempotent call does.
+        var calls = 0;
+        var mock = new MockHttpMessageHandler();
+        mock.When(HttpMethod.Post, $"{BaseUrl}/v1/fhir/resource")
+            .Respond(_ =>
+            {
+                calls++;
+                if (calls < 2)
+                {
+                    return new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                    {
+                        Content = new StringContent("Internal Server Error"),
+                    };
+                }
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"accepted":1,"failed":0,"errors":[]}"""),
+                };
+            });
+
+        using var transport = new HttpTransport(BaseUrl, "olira_test_key", maxRetries: 3, handler: mock);
+        var result = transport.LogFhir(
+            "p_1",
+            new Dictionary<string, object?> { ["resourceType"] = "Patient", ["id"] = "abc" },
+            idempotencyKey: "retry-key-1");
+
+        Assert.Equal(1, result.Accepted);
+        Assert.Equal(2, calls);
+    }
 }
