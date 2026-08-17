@@ -183,6 +183,46 @@ public class PatientExternalIdentifiersTests
     }
 
     [Fact]
+    public void RemovePatientExternalIdentifiers_RejectsEmptyMatcherClientSide()
+    {
+        var mock = new MockHttpMessageHandler();
+        using var client = TestHelpers.CreateClient(mock);
+
+        Assert.Throws<ValidationError>(
+            () => client.RemovePatientExternalIdentifiers("p1", [new ExternalIdentifierMatcher()]));
+    }
+
+    [Fact]
+    public void RemovePatientExternalIdentifiers_RejectsValueWithoutSystemClientSide()
+    {
+        var mock = new MockHttpMessageHandler();
+        using var client = TestHelpers.CreateClient(mock);
+
+        Assert.Throws<ValidationError>(
+            () => client.RemovePatientExternalIdentifiers("p1", [new ExternalIdentifierMatcher { Value = "MRN1" }]));
+    }
+
+    [Fact]
+    public async Task RemovePatientExternalIdentifiersAsync_RejectsEmptyMatcherClientSide()
+    {
+        var mock = new MockHttpMessageHandler();
+        using var client = TestHelpers.CreateClient(mock);
+
+        await Assert.ThrowsAsync<ValidationError>(
+            () => client.RemovePatientExternalIdentifiersAsync("p1", [new ExternalIdentifierMatcher()]));
+    }
+
+    [Fact]
+    public async Task RemovePatientExternalIdentifiersAsync_RejectsValueWithoutSystemClientSide()
+    {
+        var mock = new MockHttpMessageHandler();
+        using var client = TestHelpers.CreateClient(mock);
+
+        await Assert.ThrowsAsync<ValidationError>(
+            () => client.RemovePatientExternalIdentifiersAsync("p1", [new ExternalIdentifierMatcher { Value = "MRN1" }]));
+    }
+
+    [Fact]
     public void ListPatients_SendsIntegrationIdFilter()
     {
         var mock = new MockHttpMessageHandler();

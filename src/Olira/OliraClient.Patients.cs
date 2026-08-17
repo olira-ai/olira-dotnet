@@ -55,9 +55,12 @@ public sealed partial class OliraClient
     /// List patients in your organisation. Requires api:manage-patients scope.
     /// Filters compose as AND on the same identifier: <paramref name="externalSystem"/> alone finds
     /// every patient with an identifier for that system (e.g. every Epic patient);
-    /// <paramref name="externalSystem"/> + <paramref name="externalValue"/> finds the one patient
-    /// with that exact identifier; <paramref name="integrationId"/> alone finds every patient linked
-    /// to that specific integration instance, regardless of system or value.
+    /// <paramref name="externalSystem"/> + <paramref name="externalValue"/> finds every patient with
+    /// that exact identifier — usually one, but not guaranteed: two integration instances of the same
+    /// system can share a value, so the same (system, value) pair can resolve to more than one
+    /// patient. Add <paramref name="integrationId"/> when you need exactly the row for one specific
+    /// instance. <paramref name="integrationId"/> alone finds every patient linked to that specific
+    /// integration instance, regardless of system or value.
     /// <paramref name="externalValue"/> requires <paramref name="externalSystem"/>.
     /// </summary>
     public PatientListResult ListPatients(
@@ -195,9 +198,25 @@ public sealed partial class OliraClient
         return _transport.RemovePatientExternalIdentifiers(patientId, body);
     }
 
-    /// <summary>Builds the wire body for a matcher, omitting unset fields.</summary>
+    /// <summary>
+    /// Builds the wire body for a matcher, omitting unset fields. Fails fast, client-side,
+    /// on the same invalid-matcher cases the server rejects with 422 — avoids a round trip
+    /// for a request that can never succeed, and avoids ever sending an empty matcher
+    /// (which would mean "match everything").
+    /// </summary>
     private static Dictionary<string, object?> MatcherToDictionary(ExternalIdentifierMatcher matcher)
     {
+        if (matcher.System is null && matcher.Value is null && matcher.IntegrationId is null)
+        {
+            throw new ValidationError(
+                "ExternalIdentifierMatcher requires at least one of System, Value, or IntegrationId.");
+        }
+
+        if (matcher.Value is not null && matcher.System is null)
+        {
+            throw new ValidationError("ExternalIdentifierMatcher.Value requires System to also be set.");
+        }
+
         var dict = new Dictionary<string, object?>();
         if (matcher.System is not null) dict["system"] = matcher.System;
         if (matcher.Value is not null) dict["value"] = matcher.Value;

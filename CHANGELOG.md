@@ -26,7 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (every identifier for that system — `System = "epic"` unlinks every connected Epic
   instance), `IntegrationId` only (that instance), or `System` + `IntegrationId`.
   It is the only way to delete an identifier, and can remove one owned by a platform
-  integration — a deliberate, irreversible unlink.
+  integration — a deliberate, irreversible unlink. An empty matcher, or `Value` set
+  without `System`, is rejected client-side before the request is sent.
 - `ListPatients(integrationId: ...)` and `ListPatients(externalSystem: ...)` without a
   value — find every patient linked to one integration instance, or every patient with
   an identifier for that system. `externalValue` still requires `externalSystem`.
