@@ -113,6 +113,46 @@ public sealed partial class HttpTransport
         return DeserializeRequired<Patient>(raw);
     }
 
+    /// <summary>Add external identifiers to a patient (POST /v1/patients/{patient_id}/external-identifiers).
+    /// Requires api:manage-patients scope.</summary>
+    public ExternalIdentifierMutationResult AddPatientExternalIdentifiers(string patientId, object body) =>
+        AddPatientExternalIdentifiersAsync(patientId, body).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="AddPatientExternalIdentifiers"/>
+    public async Task<ExternalIdentifierMutationResult> AddPatientExternalIdentifiersAsync(
+        string patientId,
+        object body,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Post,
+                $"/v1/patients/{Uri.EscapeDataString(patientId)}/external-identifiers",
+                json: body,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ExternalIdentifierMutationResult>(raw);
+    }
+
+    /// <summary>Remove external identifiers from a patient (DELETE /v1/patients/{patient_id}/external-identifiers).
+    /// Requires api:manage-patients scope.</summary>
+    public ExternalIdentifierMutationResult RemovePatientExternalIdentifiers(string patientId, object body) =>
+        RemovePatientExternalIdentifiersAsync(patientId, body).GetAwaiter().GetResult();
+
+    /// <inheritdoc cref="RemovePatientExternalIdentifiers"/>
+    public async Task<ExternalIdentifierMutationResult> RemovePatientExternalIdentifiersAsync(
+        string patientId,
+        object body,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await RequestAsync(
+                HttpMethod.Delete,
+                $"/v1/patients/{Uri.EscapeDataString(patientId)}/external-identifiers",
+                json: body,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return DeserializeRequired<ExternalIdentifierMutationResult>(raw);
+    }
+
     /// <summary>
     /// Delete a patient (DELETE /v1/patients/{patient_id}). Soft-deletes by default.
     /// Pass <paramref name="permanent"/> to hard-delete (irreversible).

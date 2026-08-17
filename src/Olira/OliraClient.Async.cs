@@ -140,12 +140,13 @@ public sealed partial class OliraClient
         return _transport.GetPatientAsync(patientId, cancellationToken);
     }
 
-    /// <summary>Async list patients.</summary>
+    /// <summary>Async list patients. See <see cref="ListPatients"/> for filter semantics.</summary>
     public Task<PatientListResult> ListPatientsAsync(
         int limit = 100,
         int offset = 0,
         string? externalSystem = null,
         string? externalValue = null,
+        string? integrationId = null,
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -162,6 +163,11 @@ public sealed partial class OliraClient
         if (externalValue is not null)
         {
             parameters["external_value"] = externalValue;
+        }
+
+        if (integrationId is not null)
+        {
+            parameters["integration_id"] = integrationId;
         }
 
         return _transport.ListPatientsAsync(parameters, cancellationToken);
@@ -184,6 +190,7 @@ public sealed partial class OliraClient
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ValidateExternalIdentifiersForUpdate(externalIdentifiers);
         var req = new UpdatePatientRequest
         {
             FirstName = firstName,
@@ -199,6 +206,42 @@ public sealed partial class OliraClient
             Metadata = metadata,
         };
         return _transport.UpdatePatientAsync(patientId, ToBody(req), cancellationToken);
+    }
+
+    /// <summary>Async add external identifiers to a patient.</summary>
+    public Task<ExternalIdentifierMutationResult> AddPatientExternalIdentifiersAsync(
+        string patientId,
+        IReadOnlyList<ExternalIdentifier> identifiers,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var body = new Dictionary<string, object?>
+        {
+            ["identifiers"] = identifiers.Select(i => new Dictionary<string, object?>
+            {
+                ["system"] = i.System,
+                ["value"] = i.Value,
+            }).ToList(),
+        };
+        return _transport.AddPatientExternalIdentifiersAsync(patientId, body, cancellationToken);
+    }
+
+    /// <summary>Async remove external identifiers from a patient. See
+    /// <see cref="RemovePatientExternalIdentifiers"/> for matcher semantics — a matcher can target
+    /// one exact identifier, every identifier for a system, or every identifier for an integration
+    /// instance. Can match ANY identifier, including one owned by a platform integration — a
+    /// deliberate, irreversible unlink.</summary>
+    public Task<ExternalIdentifierMutationResult> RemovePatientExternalIdentifiersAsync(
+        string patientId,
+        IReadOnlyList<ExternalIdentifierMatcher> identifiers,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var body = new Dictionary<string, object?>
+        {
+            ["identifiers"] = identifiers.Select(MatcherToDictionary).ToList(),
+        };
+        return _transport.RemovePatientExternalIdentifiersAsync(patientId, body, cancellationToken);
     }
 
     /// <summary>Async delete patient.</summary>
