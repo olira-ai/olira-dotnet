@@ -371,6 +371,30 @@ public static class Validation
                 Message = "processing_mode must be 'single_document' or 'segmented_notes'",
             };
         }
+        else if (mode == "single_document")
+        {
+            if (data.TryGetValue("date_hints", out var dateHints)
+                && dateHints.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
+            {
+                yield return new IngestionRowError
+                {
+                    Line = line,
+                    Code = "unexpected_date_hints",
+                    Message = "date_hints only applies to processing_mode='segmented_notes'",
+                };
+            }
+
+            if (data.TryGetValue("layout_hints", out var layoutHints)
+                && layoutHints.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
+            {
+                yield return new IngestionRowError
+                {
+                    Line = line,
+                    Code = "unexpected_layout_hints",
+                    Message = "layout_hints only applies to processing_mode='segmented_notes'",
+                };
+            }
+        }
         else if (mode == "segmented_notes")
         {
             if (TryGetString(data, "timestamp", out var segTs) && !string.IsNullOrEmpty(segTs))
