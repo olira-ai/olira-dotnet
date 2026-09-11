@@ -252,19 +252,28 @@ public sealed class IngestDocument
         string path,
         string patientId,
         string logType,
-        string timestamp,
+        string? timestamp = null,
         string? refId = null,
         string? documentType = null,
         string? noteType = null,
         object? source = null,
         string? idempotencyKey = null,
         string? contentType = null,
-        string? filename = null)
+        string? filename = null,
+        // Appended, NOT inserted: placing these before refId would silently rebind an existing
+        // positional 5th argument from refId to processingMode — a wrong wire value with no
+        // compiler error, which is worse than a build break.
+        string processingMode = "single_document",
+        IDictionary<string, object?>? dateHints = null,
+        IDictionary<string, object?>? layoutHints = null)
     {
         Path = path;
         PatientId = patientId;
         LogType = logType;
         Timestamp = timestamp;
+        ProcessingMode = processingMode;
+        DateHints = dateHints;
+        LayoutHints = layoutHints;
         RefId = refId;
         DocumentType = documentType;
         NoteType = noteType;
@@ -283,8 +292,26 @@ public sealed class IngestDocument
     /// <summary>Log type: unstructured_report | clinical_note.</summary>
     public string LogType { get; set; }
 
-    /// <summary>ISO-8601 document timestamp.</summary>
-    public string Timestamp { get; set; }
+    /// <summary>
+    /// ISO-8601 document timestamp. Required under <c>single_document</c>; omit under
+    /// <c>segmented_notes</c>, where each emitted note is dated from the document's content.
+    /// </summary>
+    public string? Timestamp { get; set; }
+
+    /// <summary>single_document (one log for the whole file) or segmented_notes.</summary>
+    public string ProcessingMode { get; set; }
+
+    /// <summary>
+    /// segmented_notes only. Bounds and disambiguates inferred dates:
+    /// <c>{"from": "2018-03", "to": "2025-01", "day_first": true}</c>.
+    /// </summary>
+    public IDictionary<string, object?>? DateHints { get; set; }
+
+    /// <summary>
+    /// segmented_notes only. What each page holds, in page order:
+    /// <c>{"pages": [{"left": "identity card", "right": "clinical notes"}]}</c>.
+    /// </summary>
+    public IDictionary<string, object?>? LayoutHints { get; set; }
 
     /// <summary>Optional document reference id.</summary>
     public string? RefId { get; set; }
@@ -378,9 +405,15 @@ public sealed class IngestRecord
             ["content_type"] = contentType,
             ["s3_key"] = s3Key,
             ["log_type"] = spec.LogType,
-            ["timestamp"] = spec.Timestamp,
+            ["processing_mode"] = spec.ProcessingMode,
         };
 
+        if (!string.IsNullOrEmpty(spec.Timestamp))
+            data["timestamp"] = spec.Timestamp;
+        if (spec.DateHints is not null)
+            data["date_hints"] = spec.DateHints;
+        if (spec.LayoutHints is not null)
+            data["layout_hints"] = spec.LayoutHints;
         if (!string.IsNullOrEmpty(spec.DocumentType))
             data["document_type"] = spec.DocumentType;
         if (!string.IsNullOrEmpty(spec.NoteType))

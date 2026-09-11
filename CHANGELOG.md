@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-09-11
+
+### Added
+- `DocumentProcessingMode` (`SingleDocument` / `SegmentedNotes`) on `UploadDocument` /
+  `UploadDocumentAsync` (`OliraClient`) and `IngestDocument`. `SingleDocument` (default)
+  still emits one log for the whole file at the timestamp you supply. `SegmentedNotes`
+  treats the file as a multi-encounter container: omit the timestamp and one
+  `clinical_note` is emitted per detected visit, dated from the document's own content.
+- `dateHints` / `layoutHints` on the same upload and ingest surfaces — only valid with
+  `SegmentedNotes`. Hints bound extracted dates and describe what each page holds.
+- `DocumentStatus.Segmenting`, `LogsEmitted`, and `SegmentationFailed` for the
+  segmented-notes lifecycle. `DocumentStatus.IsTerminal()` now includes `LogsEmitted`
+  and `SegmentationFailed` alongside `LogEmitted` / `OcrFailed`.
+- `DocumentSegment` plus `EventLogIds`, `OcrMethod`, and segment counts
+  (`SegmentsDetected` / `SegmentsEmitted` / `SegmentsHeld` / `UnassignedChars` /
+  `Segments`) on `DocumentResource`.
+
+### Changed
+- **Breaking:** `UploadDocument` / `UploadDocumentAsync` moved `timestamp` after
+  `idempotencyKey` and made it optional. Required for `single_document`; must be
+  omitted for `segmented_notes`. Named-argument callers are unaffected; positional
+  callers that passed `timestamp` before `idempotencyKey` will not compile.
+- `IngestDocument.Timestamp` is now nullable. `processingMode` / `dateHints` /
+  `layoutHints` are appended on the constructor so existing positional arguments
+  keep their meaning.
+
 ## [0.5.0] - 2026-08-17
 
 ### Added
