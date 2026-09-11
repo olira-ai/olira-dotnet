@@ -197,6 +197,9 @@ public sealed partial class OliraClient
                 patientId: doc.PatientId,
                 logType: doc.LogType,
                 timestamp: doc.Timestamp,
+                processingMode: doc.ProcessingMode,
+                dateHints: doc.DateHints,
+                layoutHints: doc.LayoutHints,
                 refId: refId,
                 documentType: doc.DocumentType,
                 noteType: doc.NoteType,
@@ -315,13 +318,25 @@ public sealed partial class OliraClient
 
     /// <summary>
     /// Upload a PDF/image for OCR → EventLog (upload-url + PUT + commit).
+    /// <para>
+    /// <paramref name="processingMode"/> defaults to <c>SingleDocument</c>: one log for the
+    /// whole file at the <paramref name="timestamp"/> you supply. Use <c>SegmentedNotes</c>
+    /// for a file spanning many encounters (a scanned paper folder) — omit
+    /// <paramref name="timestamp"/> and one <c>clinical_note</c> is emitted per detected visit
+    /// entry, dated from the content. <paramref name="dateHints"/> bounds those dates
+    /// (<c>{"from": "2018-03", "to": "2025-01", "day_first": true}</c>) and
+    /// <paramref name="layoutHints"/> says what each page holds.
+    /// </para>
     /// </summary>
     public DocumentHandle UploadDocument(
         string patientId,
         string path,
         DocumentLogType logType,
-        DateTimeOffset timestamp,
         string idempotencyKey,
+        DateTimeOffset? timestamp = null,
+        DocumentProcessingMode processingMode = DocumentProcessingMode.SingleDocument,
+        IDictionary<string, object?>? dateHints = null,
+        IDictionary<string, object?>? layoutHints = null,
         string? documentType = null,
         string? noteType = null,
         object? source = null,
@@ -335,8 +350,11 @@ public sealed partial class OliraClient
             patientId,
             path,
             logType,
-            timestamp,
             idempotencyKey,
+            timestamp,
+            processingMode,
+            dateHints,
+            layoutHints,
             documentType,
             noteType,
             source,
@@ -349,31 +367,43 @@ public sealed partial class OliraClient
         return handle;
     }
 
-    /// <summary>Upload with a string log_type.</summary>
+    /// <summary>
+    /// Upload with a string log_type. Mirrors the <see cref="DocumentLogType"/> overload
+    /// exactly — see it for <paramref name="processingMode"/> semantics.
+    /// </summary>
     public DocumentHandle UploadDocument(
         string patientId,
         string path,
         string logType,
-        DateTimeOffset timestamp,
         string idempotencyKey,
+        DateTimeOffset? timestamp = null,
+        DocumentProcessingMode processingMode = DocumentProcessingMode.SingleDocument,
+        IDictionary<string, object?>? dateHints = null,
+        IDictionary<string, object?>? layoutHints = null,
         string? documentType = null,
         string? noteType = null,
         object? source = null,
         string? contentType = null,
         bool wait = false,
         double waitTimeoutSeconds = 600.0) =>
+        // Forwarded by NAME, not position. The previous positional forward is what broke when
+        // the enum overload's parameters were reordered, and named arguments make this
+        // overload immune to the next reorder.
         UploadDocument(
-            patientId,
-            path,
-            Documents.ParseLogType(logType),
-            timestamp,
-            idempotencyKey,
-            documentType,
-            noteType,
-            source,
-            contentType,
-            wait,
-            waitTimeoutSeconds);
+            patientId: patientId,
+            path: path,
+            logType: Documents.ParseLogType(logType),
+            idempotencyKey: idempotencyKey,
+            timestamp: timestamp,
+            processingMode: processingMode,
+            dateHints: dateHints,
+            layoutHints: layoutHints,
+            documentType: documentType,
+            noteType: noteType,
+            source: source,
+            contentType: contentType,
+            wait: wait,
+            waitTimeoutSeconds: waitTimeoutSeconds);
 
     /// <summary>Poll document OCR status.</summary>
     public DocumentResource GetDocument(string documentId)

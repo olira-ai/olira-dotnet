@@ -910,13 +910,16 @@ public sealed partial class OliraClient
         return _transport.RetryViewBackfillAsync(jobId, cancellationToken);
     }
 
-    /// <summary>Async upload document.</summary>
+    /// <summary>Async upload document. See <c>UploadDocument</c> for processingMode semantics.</summary>
     public async Task<DocumentHandle> UploadDocumentAsync(
         string patientId,
         string path,
         DocumentLogType logType,
-        DateTimeOffset timestamp,
         string idempotencyKey,
+        DateTimeOffset? timestamp = null,
+        DocumentProcessingMode processingMode = DocumentProcessingMode.SingleDocument,
+        IDictionary<string, object?>? dateHints = null,
+        IDictionary<string, object?>? layoutHints = null,
         string? documentType = null,
         string? noteType = null,
         object? source = null,
@@ -932,8 +935,11 @@ public sealed partial class OliraClient
                 patientId,
                 path,
                 logType,
-                timestamp,
                 idempotencyKey,
+                timestamp,
+                processingMode,
+                dateHints,
+                layoutHints,
                 documentType,
                 noteType,
                 source,

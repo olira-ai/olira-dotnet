@@ -86,7 +86,7 @@ try
     if (!string.IsNullOrEmpty(doc.Error))
         Console.WriteLine($"  error={doc.Error}");
 
-    if (doc.Status is not (DocumentStatus.LogEmitted or DocumentStatus.OcrFailed))
+    if (!doc.Status.IsTerminal())
         throw new InvalidOperationException($"Unexpected document status: {doc.Status}");
 
     // Optional — clinical note target (same live path, different labels).

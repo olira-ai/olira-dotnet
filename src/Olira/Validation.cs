@@ -339,7 +339,15 @@ public static class Validation
         int line,
         HashSet<string> knownPatientIds)
     {
-        foreach (var field in new[] { "ref_id", "patient_id", "s3_key", "log_type", "timestamp" })
+        // Under segmented_notes the file is a container spanning many encounters: it carries
+        // no timestamp of its own, and each emitted note is dated from the document's content.
+        var mode = TryGetString(data, "processing_mode", out var rawMode) && !string.IsNullOrEmpty(rawMode)
+            ? rawMode
+            : "single_document";
+        var required = mode == "single_document"
+            ? new[] { "ref_id", "patient_id", "s3_key", "log_type", "timestamp" }
+            : new[] { "ref_id", "patient_id", "s3_key", "log_type" };
+        foreach (var field in required)
         {
             if (!TryGetString(data, field, out var value) || string.IsNullOrEmpty(value))
             {
@@ -353,6 +361,39 @@ public static class Validation
         }
 
         TryGetString(data, "log_type", out var logType);
+
+        if (mode is not ("single_document" or "segmented_notes"))
+        {
+            yield return new IngestionRowError
+            {
+                Line = line,
+                Code = "invalid_processing_mode",
+                Message = "processing_mode must be 'single_document' or 'segmented_notes'",
+            };
+        }
+        else if (mode == "segmented_notes")
+        {
+            if (TryGetString(data, "timestamp", out var segTs) && !string.IsNullOrEmpty(segTs))
+            {
+                yield return new IngestionRowError
+                {
+                    Line = line,
+                    Code = "unexpected_timestamp",
+                    Message = "timestamp must be omitted for processing_mode='segmented_notes' — each "
+                              + "emitted note is dated from the document's own content",
+                };
+            }
+
+            if (!string.IsNullOrEmpty(logType) && logType != "clinical_note")
+            {
+                yield return new IngestionRowError
+                {
+                    Line = line,
+                    Code = "invalid_log_type",
+                    Message = "processing_mode='segmented_notes' requires log_type='clinical_note'",
+                };
+            }
+        }
         if (!string.IsNullOrEmpty(logType) && !DocLogTypes.Contains(logType))
         {
             yield return new IngestionRowError

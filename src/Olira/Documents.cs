@@ -41,14 +41,27 @@ public enum DocumentStatus
 
     [JsonStringEnumMemberName("log_emitted")]
     LogEmitted,
+
+    // segmented_notes only:
+    [JsonStringEnumMemberName("segmenting")]
+    Segmenting,
+
+    [JsonStringEnumMemberName("logs_emitted")]
+    LogsEmitted,
+
+    [JsonStringEnumMemberName("segmentation_failed")]
+    SegmentationFailed,
 }
 
 /// <summary>Extensions for <see cref="DocumentStatus"/>.</summary>
 public static class DocumentStatusExtensions
 {
-    /// <summary>True when OCR finished successfully or failed.</summary>
+    /// <summary>True when the document reached a terminal state (success or failure).</summary>
     public static bool IsTerminal(this DocumentStatus status) =>
-        status is DocumentStatus.LogEmitted or DocumentStatus.OcrFailed;
+        status is DocumentStatus.LogEmitted
+            or DocumentStatus.LogsEmitted
+            or DocumentStatus.OcrFailed
+            or DocumentStatus.SegmentationFailed;
 
     /// <summary>Wire value for the status.</summary>
     public static string ToWireValue(this DocumentStatus status) =>
@@ -60,6 +73,9 @@ public static class DocumentStatusExtensions
             DocumentStatus.OcrComplete => "ocr_complete",
             DocumentStatus.OcrFailed => "ocr_failed",
             DocumentStatus.LogEmitted => "log_emitted",
+            DocumentStatus.Segmenting => "segmenting",
+            DocumentStatus.LogsEmitted => "logs_emitted",
+            DocumentStatus.SegmentationFailed => "segmentation_failed",
             _ => status.ToString().ToLowerInvariant(),
         };
 
@@ -73,6 +89,57 @@ public static class DocumentStatusExtensions
         };
 }
 
+/// <summary>
+/// How a document's OCR text becomes event logs.
+/// <c>SingleDocument</c> emits one log for the whole file at the timestamp you supply.
+/// <c>SegmentedNotes</c> treats the file as a container spanning many encounters: you supply
+/// no timestamp, and one <c>clinical_note</c> is emitted per detected visit entry, each dated
+/// from the document's own content.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter<DocumentProcessingMode>))]
+public enum DocumentProcessingMode
+{
+    [JsonStringEnumMemberName("single_document")]
+    SingleDocument,
+
+    [JsonStringEnumMemberName("segmented_notes")]
+    SegmentedNotes,
+}
+
+/// <summary>Extensions for <see cref="DocumentProcessingMode"/>.</summary>
+public static class DocumentProcessingModeExtensions
+{
+    /// <summary>Wire value for the processing mode.</summary>
+    public static string ToWireValue(this DocumentProcessingMode mode) =>
+        mode switch
+        {
+            DocumentProcessingMode.SingleDocument => "single_document",
+            DocumentProcessingMode.SegmentedNotes => "segmented_notes",
+            _ => mode.ToString().ToLowerInvariant(),
+        };
+}
+
+/// <summary>
+/// One detected encounter entry in a <c>segmented_notes</c> document.
+/// <c>Status == "held"</c> means the segment was detected but not emitted;
+/// <see cref="HoldReason"/> says why.
+/// </summary>
+public sealed class DocumentSegment
+{
+    public int Index { get; set; }
+    public string Kind { get; set; } = "";
+    public int PageStart { get; set; }
+    public int PageEnd { get; set; }
+    public string? Leaf { get; set; }
+    public string? DateText { get; set; }
+    public string? Timestamp { get; set; }
+    public string? DatePrecision { get; set; }
+    public double? Confidence { get; set; }
+    public string Status { get; set; } = "";
+    public string? HoldReason { get; set; }
+    public string? EventLogId { get; set; }
+}
+
 /// <summary>Document resource returned by GET /v1/documents/{id}.</summary>
 public sealed class DocumentResource
 {
@@ -83,11 +150,19 @@ public sealed class DocumentResource
     public string LogType { get; set; } = "";
     public string? DocumentType { get; set; }
     public string? NoteType { get; set; }
+    public string ProcessingMode { get; set; } = "single_document";
     public string? S3Uri { get; set; }
     public string? EventLogId { get; set; }
+    public List<string> EventLogIds { get; set; } = [];
     public string? Error { get; set; }
     public int? OcrPageCount { get; set; }
     public double? OcrConfidence { get; set; }
+    public string? OcrMethod { get; set; }
+    public int? SegmentsDetected { get; set; }
+    public int? SegmentsEmitted { get; set; }
+    public int? SegmentsHeld { get; set; }
+    public int? UnassignedChars { get; set; }
+    public List<DocumentSegment> Segments { get; set; } = [];
     public string? CreatedAt { get; set; }
     public string? UpdatedAt { get; set; }
 }
@@ -179,8 +254,11 @@ public static class Documents
         string patientId,
         string path,
         DocumentLogType logType,
-        DateTimeOffset timestamp,
         string idempotencyKey,
+        DateTimeOffset? timestamp = null,
+        DocumentProcessingMode processingMode = DocumentProcessingMode.SingleDocument,
+        IDictionary<string, object?>? dateHints = null,
+        IDictionary<string, object?>? layoutHints = null,
         string? documentType = null,
         string? noteType = null,
         object? source = null,
@@ -203,6 +281,34 @@ public static class Documents
                          ?? GuessContentType(fileName)
                          ?? "application/pdf";
 
+        if (processingMode == DocumentProcessingMode.SingleDocument)
+        {
+            if (timestamp is null)
+            {
+                throw new ValidationError("timestamp is required for processing_mode=single_document");
+            }
+
+            if (dateHints is not null || layoutHints is not null)
+            {
+                throw new ValidationError(
+                    "date_hints / layout_hints only apply to processing_mode=segmented_notes");
+            }
+        }
+        else
+        {
+            if (timestamp is not null)
+            {
+                throw new ValidationError(
+                    "timestamp must be omitted for processing_mode=segmented_notes — each emitted "
+                    + "note is dated from the document's own content");
+            }
+
+            if (logType != DocumentLogType.ClinicalNote)
+            {
+                throw new ValidationError("processing_mode=segmented_notes requires log_type=clinical_note");
+            }
+        }
+
         var body = new Dictionary<string, object?>
         {
             ["patient_id"] = patientId,
@@ -211,9 +317,24 @@ public static class Documents
             ["size_bytes"] = blob.Length,
             ["filename"] = fileName,
             ["log_type"] = logType.ToWireValue(),
-            ["timestamp"] = timestamp.ToString("O"),
+            ["processing_mode"] = processingMode.ToWireValue(),
             ["idempotency_key"] = idempotencyKey,
         };
+
+        if (timestamp is not null)
+        {
+            body["timestamp"] = timestamp.Value.ToString("O");
+        }
+
+        if (dateHints is not null)
+        {
+            body["date_hints"] = dateHints;
+        }
+
+        if (layoutHints is not null)
+        {
+            body["layout_hints"] = layoutHints;
+        }
 
         if (logType == DocumentLogType.UnstructuredReport)
         {
